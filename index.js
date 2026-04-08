@@ -51,36 +51,13 @@ function initSettings() {
 function registerGameMacros() {
     const { registerMacro } = SillyTavern.getContext();
     
-    // Game state macros
-    registerMacro('gamestate', {
-        description: 'Current game state (location, time, active NPCs)',
-        handler: () => getGameState()
-    });
-    
-    registerMacro('activequest', {
-        description: 'Currently active quest',
-        handler: () => getActiveQuest()
-    });
-    
-    registerMacro('userinventory', {
-        description: 'User inventory items',
-        handler: () => getUserInventory()
-    });
-    
-    registerMacro('location', {
-        description: 'Current location',
-        handler: () => getLocation()
-    });
-    
-    registerMacro('gametime', {
-        description: 'Current game time',
-        handler: () => getTime()
-    });
-    
-    registerMacro('activenpcs', {
-        description: 'Active NPCs in current scene',
-        handler: () => getActiveNPCs()
-    });
+    // Game state macros - register as simple string macros
+    registerMacro('gamestate', getGameState);
+    registerMacro('activequest', getActiveQuest);
+    registerMacro('userinventory', getUserInventory);
+    registerMacro('location', getLocation);
+    registerMacro('gametime', getTime);
+    registerMacro('activenpcs', getActiveNPCs);
     
     console.log('[RPG Engine] Macros registered');
 }
