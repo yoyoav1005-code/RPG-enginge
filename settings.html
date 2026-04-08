@@ -1,0 +1,104 @@
+<div class="rpg-engine-settings">
+    <h3>RPG Engine Settings</h3>
+    
+    <div class="setting-row">
+        <label for="rpg-enabled">Enable RPG Engine</label>
+        <input type="checkbox" id="rpg-enabled" checked>
+    </div>
+    
+    <div class="setting-row">
+        <label for="rpg-auto-update">Auto-update game state from chat</label>
+        <input type="checkbox" id="rpg-auto-update" checked>
+    </div>
+    
+    <div class="setting-row">
+        <label for="rpg-quest">Active Quest</label>
+        <textarea id="rpg-quest" placeholder="Enter the current quest objective..."></textarea>
+    </div>
+    
+    <div class="setting-row">
+        <label for="rpg-gamestate">Game State</label>
+        <textarea id="rpg-gamestate" placeholder="Location, time, active NPCs, etc..."></textarea>
+    </div>
+    
+    <div class="setting-row">
+        <label for="rpg-inventory">User Inventory</label>
+        <textarea id="rpg-inventory" placeholder="One item per line..."></textarea>
+    </div>
+    
+    <div class="setting-row">
+        <button id="rpg-save">Save Settings</button>
+        <button id="rpg-reset">Reset to Defaults</button>
+    </div>
+    
+    <div class="rpg-engine-status">
+        <h4>Current Status</h4>
+        <p><strong>Quest:</strong> <span id="status-quest">No quest</span></p>
+        <p><strong>Items:</strong> <span id="status-items">0 items</span></p>
+    </div>
+</div>
+
+<script>
+    const MODULE_NAME = 'rpg_engine';
+    
+    // Load settings
+    function loadSettings() {
+        if (extension_settings[MODULE_NAME]) {
+            document.getElementById('rpg-enabled').checked = extension_settings[MODULE_NAME].enabled;
+            document.getElementById('rpg-auto-update').checked = extension_settings[MODULE_NAME].autoUpdateGameState;
+            document.getElementById('rpg-quest').value = extension_settings[MODULE_NAME].quest || '';
+            document.getElementById('rpg-gamestate').value = extension_settings[MODULE_NAME].gameState || '';
+            document.getElementById('rpg-inventory').value = (extension_settings[MODULE_NAME].inventory || []).join('\n');
+            
+            updateStatus();
+        }
+    }
+    
+    // Save settings
+    function saveSettings() {
+        if (!extension_settings[MODULE_NAME]) {
+            extension_settings[MODULE_NAME] = {};
+        }
+        
+        extension_settings[MODULE_NAME].enabled = document.getElementById('rpg-enabled').checked;
+        extension_settings[MODULE_NAME].autoUpdateGameState = document.getElementById('rpg-auto-update').checked;
+        extension_settings[MODULE_NAME].quest = document.getElementById('rpg-quest').value;
+        extension_settings[MODULE_NAME].gameState = document.getElementById('rpg-gamestate').value;
+        extension_settings[MODULE_NAME].inventory = document.getElementById('rpg-inventory').value.split('\n').filter(line => line.trim());
+        
+        saveSettingsDebounced();
+        updateStatus();
+        toastr.info('Settings saved', 'RPG Engine');
+    }
+    
+    // Reset settings
+    function resetSettings() {
+        extension_settings[MODULE_NAME] = {
+            enabled: true,
+            autoUpdateGameState: true,
+            quest: '',
+            gameState: '',
+            inventory: []
+        };
+        
+        saveSettingsDebounced();
+        loadSettings();
+        toastr.info('Settings reset to defaults', 'RPG Engine');
+    }
+    
+    // Update status display
+    function updateStatus() {
+        const quest = extension_settings[MODULE_NAME]?.quest || 'No quest';
+        const items = (extension_settings[MODULE_NAME]?.inventory || []).length;
+        
+        document.getElementById('status-quest').textContent = quest;
+        document.getElementById('status-items').textContent = `${items} item${items !== 1 ? 's' : ''}`;
+    }
+    
+    // Event listeners
+    document.getElementById('rpg-save').addEventListener('click', saveSettings);
+    document.getElementById('rpg-reset').addEventListener('click', resetSettings);
+    
+    // Load settings on init
+    loadSettings();
+</script>

@@ -1,0 +1,58 @@
+/* RPG Engine Extension Styles */
+
+.rpg-engine-settings {
+    padding: 15px;
+}
+
+.rpg-engine-settings h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.rpg-engine-settings .setting-row {
+    margin-bottom: 15px;
+}
+
+.rpg-engine-settings label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.rpg-engine-settings textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.rpg-engine-settings button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.rpg-engine-settings button:hover {
+    background-color: #45a049;
+}
+
+.rpg-engine-status {
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    margin-top: 15px;
+}
+
+.rpg-engine-status p {
+    margin: 5px 0;
+}
+
+.rpg-engine-status strong {
+    color: #333;
+}
