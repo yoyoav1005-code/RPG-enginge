@@ -2,25 +2,31 @@
 
 const MODULE_NAME = 'rpg_engine';
 
-function initializeRPGExtension() {
-    const context = SillyTavern.getContext();
+async function initializeRPGExtension() {
+    console.log('[RPG Engine] Starting initialization...');
     
-    // Initialize settings
-    initSettings();
-    
-    // Register macros for game state
-    registerGameMacros();
-    
-    // Register slash commands
-    registerSlashCommands();
-    
-    // Listen to chat events
-    setupChatListeners();
-    
-    // Create settings UI
-    createSettingsUI();
-    
-    console.log('[RPG Engine] Extension loaded successfully');
+    try {
+        const context = SillyTavern.getContext();
+        
+        // Initialize settings first
+        initSettings();
+        
+        // Register macros for game state
+        registerGameMacros();
+        
+        // Register slash commands
+        registerSlashCommands();
+        
+        // Listen to chat events
+        setupChatListeners();
+        
+        // Create settings UI
+        createSettingsUI();
+        
+        console.log('[RPG Engine] Extension loaded successfully');
+    } catch (error) {
+        console.error('[RPG Engine] Initialization failed:', error);
+    }
 }
 
 function initSettings() {
@@ -36,6 +42,7 @@ function initSettings() {
             activeNPCs: []
         };
     }
+    console.log('[RPG Engine] Settings initialized');
 }
 
 function registerGameMacros() {
@@ -71,6 +78,8 @@ function registerGameMacros() {
         description: 'Active NPCs in current scene',
         handler: () => getActiveNPCs()
     });
+    
+    console.log('[RPG Engine] Macros registered');
 }
 
 function registerSlashCommands() {
@@ -125,6 +134,8 @@ function registerSlashCommands() {
             toastr.info(`Current time: ${time}`, 'RPG Engine');
         }
     }, [], 'View or set game time', true, true);
+    
+    console.log('[RPG Engine] Slash commands registered');
 }
 
 function setupChatListeners() {
@@ -137,9 +148,13 @@ function setupChatListeners() {
             updateGameStateFromChat();
         }
     });
+    
+    console.log('[RPG Engine] Chat listeners setup');
 }
 
 function createSettingsUI() {
+    console.log('[RPG Engine] Creating settings UI...');
+    
     const settingsHtml = `
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
@@ -181,41 +196,52 @@ function createSettingsUI() {
     
     $("#extensions_settings").append(settingsHtml);
     
+    console.log('[RPG Engine] Settings HTML appended to page');
+    
     // Event listeners for settings
     $("#rpg-enabled").on("change", function() {
         extension_settings[MODULE_NAME].enabled = $(this).prop('checked');
         saveSettingsDebounced();
+        console.log('[RPG Engine] Enabled setting changed');
     });
     
     $("#rpg-auto-update").on("change", function() {
         extension_settings[MODULE_NAME].autoUpdateGameState = $(this).prop('checked');
         saveSettingsDebounced();
+        console.log('[RPG Engine] Auto-update setting changed');
     });
     
     $("#rpg-quest").on("change", function() {
         extension_settings[MODULE_NAME].quest = $(this).val();
         saveSettingsDebounced();
+        console.log('[RPG Engine] Quest setting changed');
     });
     
     $("#rpg-location").on("change", function() {
         extension_settings[MODULE_NAME].location = $(this).val();
         saveSettingsDebounced();
+        console.log('[RPG Engine] Location setting changed');
     });
     
     $("#rpg-time").on("change", function() {
         extension_settings[MODULE_NAME].time = $(this).val();
         saveSettingsDebounced();
+        console.log('[RPG Engine] Time setting changed');
     });
     
     $("#rpg-gamestate").on("change", function() {
         extension_settings[MODULE_NAME].gameState = $(this).val();
         saveSettingsDebounced();
+        console.log('[RPG Engine] Game state setting changed');
     });
     
     $("#rpg-inventory").on("change", function() {
         extension_settings[MODULE_NAME].inventory = $(this).val().split('\n').filter(line => line.trim());
         saveSettingsDebounced();
+        console.log('[RPG Engine] Inventory setting changed');
     });
+    
+    console.log('[RPG Engine] Settings UI created successfully');
 }
 
 // Game State Management Functions
@@ -284,5 +310,7 @@ function updateGameStateFromChat() {
     // This is where you'd implement logic to track location, NPCs, etc.
 }
 
-// Initialize
-$(initializeRPGExtension);
+// Initialize with async wrapper
+$(async () => {
+    await initializeRPGExtension();
+});
