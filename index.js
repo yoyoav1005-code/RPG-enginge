@@ -1,8 +1,7 @@
 // RPG Engine Extension - Bare Bones Implementation
 
-import { extension_settings, debugLog, debugWarn } from "./scripts/EngineBase/RPGEngineExports.js";
+import { extension_settings, debugLog, debugWarn, getContext, extension_settings, renderExtensionTemplateAsync } from "./scripts/EngineBase/RPGEngineExports.js";
 import { saveSettingsDebounced } from "../../../../script.js";
-import { getContext, extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
 
 const MODULE_NAME = 'rpg_engine';
 
@@ -10,7 +9,7 @@ async function initializeRPGExtension() {
     console.log('[RPG Engine] Starting initialization...');
     
     try {
-        const context = SillyTavern.getContext();
+        const context = getContext();
         
         // Initialize settings first
         initSettings();
@@ -51,7 +50,7 @@ function initSettings() {
 }
 
 function registerGameMacros() {
-    const { registerMacro } = SillyTavern.getContext();
+    const { registerMacro } = getContext();
     
     // Game state macros - register as simple string macros
     registerMacro('gamestate', getGameState);
@@ -65,7 +64,7 @@ function registerGameMacros() {
 }
 
 function registerSlashCommands() {
-    const { registerSlashCommand } = SillyTavern.getContext();
+    const { registerSlashCommand } = getContext();
     
     // /quest - View current quest
     registerSlashCommand('quest', () => {
@@ -121,7 +120,7 @@ function registerSlashCommands() {
 }
 
 function setupChatListeners() {
-    const context = SillyTavern.getContext();
+    const context = getContext();
     const { eventSource, event_types } = context;
     
     // Listen for chat messages to update game state

@@ -15,4 +15,4 @@ import { debugLog, debugWarn, debugError, isDebugModeEnabled } from './debug.js'
 export { debugLog, debugWarn, debugError, isDebugModeEnabled };
 
 // Export extension_settings for use by other modules
-export { extension_settings };
+export {  getContext, extension_settings, renderExtensionTemplateAsync, chat, eventSource, event_types, saveChatConditional, addOneMessage };
