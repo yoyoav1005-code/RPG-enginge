@@ -36,7 +36,9 @@ import {
     exportTemplateToJSON,
     importTemplateFromJSON,
     saveTemplateToFile,
-    loadTemplateFromFile
+    loadTemplateFromFile,
+    loadTemplateFromJSON,
+    convertTemplateToEntries
 } from './lorebook.js';
 export { 
     createTemplateLorebook,
@@ -48,7 +50,9 @@ export {
     exportTemplateToJSON,
     importTemplateFromJSON,
     saveTemplateToFile,
-    loadTemplateFromFile 
+    loadTemplateFromFile,
+    loadTemplateFromJSON,
+    convertTemplateToEntries 
 };
 
 // Export extension_settings for use by other modules

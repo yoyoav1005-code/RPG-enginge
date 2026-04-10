@@ -89,376 +89,167 @@ export async function createTemplateLorebook(name) {
 }
 
 /**
- * Builds quest-related lorebook entries
- * @returns {Array} Array of quest data entry objects
+ * Loads the RPG template from JSON file
+ * @returns {Promise<Object>} The template data
  */
-export function buildQuestDataTemplate() {
-    debugLog('Building quest data template', 'Lorebook Builder');
+export async function loadTemplateFromJSON() {
+    debugLog('Loading template from JSON file', 'Lorebook Builder');
+    
+    try {
+        // Use ES modules import for the JSON template
+        const templateModule = await import('./templates/rpg-template.json');
+        return templateModule.default;
+    } catch (error) {
+        debugError(`Failed to load template from JSON: ${error.message}`, 'Lorebook Builder');
+        throw error;
+    }
+}
+
+/**
+ * Converts template JSON to array of entry structures
+ * @param {Object} template - The template JSON object
+ * @returns {Array} Array of entry structures
+ */
+export function convertTemplateToEntries(template) {
+    debugLog('Converting template JSON to entries', 'Lorebook Builder');
     
     const entries = [];
+    
+    // Helper function to process nested template objects
+    function processCategory(categoryName, categoryData, parentPath = '') {
+        for (const [key, value] of Object.entries(categoryData)) {
+            const currentPath = parentPath ? `${parentPath}/${key}` : key;
+            
+            if (value && typeof value === 'object' && value.keywords && value.content) {
+                // This is an entry
+                entries.push(generateEntryStructure(
+                    currentPath,
+                    value.keywords,
+                    value.content,
+                    value.group || currentPath
+                ));
+            } else if (value && typeof value === 'object') {
+                // This is a nested category, process recursively
+                processCategory(key, value, currentPath);
+            }
+        }
+    }
+    
+    // Process each top-level category
+    for (const [categoryName, categoryData] of Object.entries(template)) {
+        processCategory(categoryName, categoryData);
+    }
+    
+    debugLog(`Converted template to ${entries.length} entries`, 'Lorebook Builder');
+    return entries;
+}
 
-    // Main Quest Data
-    entries.push(generateEntryStructure(
-        'questData/mainQuestData',
-        ['main quest', 'primary objective', 'current quest', 'mission'],
-        'Main quest data entry. This tracks the primary objective and current quest status.',
-        'questData'
-    ));
+/**
+ * Builds quest-related lorebook entries from template
+ * @returns {Array} Array of quest data entry objects
+ */
+export async function buildQuestDataTemplate() {
+    debugLog('Building quest data template', 'Lorebook Builder');
+    
+    const template = await loadTemplateFromJSON();
+    const questData = template.questData || {};
+    const entries = [];
 
-    // Side Quests
-    entries.push(generateEntryStructure(
-        'questData/sideQuests',
-        ['side quest', 'optional mission', 'secondary objective', 'bonus quest'],
-        'Side quest data entry. Tracks optional missions and secondary objectives.',
-        'questData'
-    ));
-
-    // Quest Items
-    entries.push(generateEntryStructure(
-        'questData/questItems',
-        ['key item', 'quest reward', 'important item', 'quest item'],
-        'Quest items entry. Tracks key items and quest rewards.',
-        'questData'
-    ));
+    for (const [key, value] of Object.entries(questData)) {
+        entries.push(generateEntryStructure(
+            `questData/${key}`,
+            value.keywords,
+            value.content,
+            value.group
+        ));
+    }
 
     debugLog(`Built ${entries.length} quest data entries`, 'Lorebook Builder');
     return entries;
 }
 
 /**
- * Builds game state lorebook entries (locations, NPCs, time, world state)
+ * Builds game state lorebook entries (locations, NPCs, time, world state) from template
  * @returns {Array} Array of game state entry objects
  */
-export function buildGameStateTemplate() {
+export async function buildGameStateTemplate() {
     debugLog('Building game state template', 'Lorebook Builder');
     
+    const template = await loadTemplateFromJSON();
+    const gameState = template.gameState || {};
     const entries = [];
 
-    // Locations
-    entries.push(generateEntryStructure(
-        'gameState/locations/tavern',
-        ['tavern', 'inn', 'pub', 'bar'],
-        'Tavern location entry. A common gathering place for adventurers.',
-        'gameState/locations'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/locations/cave',
-        ['cave', 'dungeon', 'underground', 'tunnel'],
-        'Cave location entry. Dark and mysterious underground passages.',
-        'gameState/locations'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/locations/town',
-        ['town', 'city', 'village', 'settlement'],
-        'Town location entry. A bustling center of commerce and culture.',
-        'gameState/locations'
-    ));
+    // Process all game state entries recursively
+    function processEntries(data, basePath) {
+        for (const [key, value] of Object.entries(data)) {
+            const path = `${basePath}/${key}`;
+            if (value.keywords && value.content) {
+                entries.push(generateEntryStructure(path, value.keywords, value.content, value.group));
+            } else if (typeof value === 'object') {
+                processEntries(value, path);
+            }
+        }
+    }
 
-    // Major NPCs
-    entries.push(generateEntryStructure(
-        'gameState/majorNPCs/hero',
-        ['hero', 'protagonist', 'chosen one', 'hero'],
-        'Hero NPC entry. The main protagonist of the story.',
-        'gameState/majorNPCs'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/majorNPCs/villain',
-        ['villain', 'antagonist', 'evil', 'dark lord'],
-        'Villain NPC entry. The main antagonist opposing the hero.',
-        'gameState/majorNPCs'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/majorNPCs/ally',
-        ['ally', 'friend', 'companion', 'support'],
-        'Ally NPC entry. A helpful companion aiding the hero.',
-        'gameState/majorNPCs'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/majorNPCs/mentor',
-        ['mentor', 'teacher', 'guide', 'wise old man'],
-        'Mentor NPC entry. A wise figure providing guidance and training.',
-        'gameState/majorNPCs'
-    ));
-
-    // General NPCs
-    entries.push(generateEntryStructure(
-        'gameState/NPCs/merchant',
-        ['merchant', 'shopkeeper', 'vendor', 'seller'],
-        'Merchant NPC entry. Sells various goods and items.',
-        'gameState/NPCs'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/NPCs/guard',
-        ['guard', 'soldier', 'patrol', 'security'],
-        'Guard NPC entry. Provides security and protection.',
-        'gameState/NPCs'
-    ));
-
-    // Time
-    entries.push(generateEntryStructure(
-        'gameState/time/day',
-        ['day', 'morning', 'afternoon', 'noon'],
-        'Day time entry. The bright hours of daylight.',
-        'gameState/time'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/time/night',
-        ['night', 'evening', 'dark', 'moonlight'],
-        'Night time entry. The dark hours under the moon.',
-        'gameState/time'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/time/hour',
-        ['hour', 'time', 'moment', 'instant'],
-        'Hour time entry. Specific time tracking.',
-        'gameState/time'
-    ));
-
-    // World State
-    entries.push(generateEntryStructure(
-        'gameState/worldState/kingdom',
-        ['kingdom', 'realm', 'nation', 'country'],
-        'Kingdom world state entry. The current state of the kingdom.',
-        'gameState/worldState'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/worldState/empire',
-        ['empire', 'imperial', 'dynasty', 'throne'],
-        'Empire world state entry. The current state of the empire.',
-        'gameState/worldState'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'gameState/worldState/war',
-        ['war', 'conflict', 'battle', 'fighting'],
-        'War world state entry. Current conflicts and battles.',
-        'gameState/worldState'
-    ));
+    processEntries(gameState, 'gameState');
 
     debugLog(`Built ${entries.length} game state entries`, 'Lorebook Builder');
     return entries;
 }
 
 /**
- * Builds inventory lorebook entries (weapons, armor, items, currency)
+ * Builds inventory lorebook entries (weapons, armor, items, currency) from template
  * @returns {Array} Array of inventory entry objects
  */
-export function buildInventoryTemplate() {
+export async function buildInventoryTemplate() {
     debugLog('Building inventory template', 'Lorebook Builder');
     
+    const template = await loadTemplateFromJSON();
+    const inventory = template.inventory || {};
     const entries = [];
 
-    // Weapons
-    entries.push(generateEntryStructure(
-        'inventory/weapons/sword',
-        ['sword', 'blade', 'steel', 'weapon'],
-        'Sword weapon entry. A versatile melee weapon.',
-        'inventory/weapons'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'inventory/weapons/bow',
-        ['bow', 'arrow', 'ranged', 'quiver'],
-        'Bow weapon entry. A ranged weapon for distance attacks.',
-        'inventory/weapons'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'inventory/weapons/dagger',
-        ['dagger', 'knife', 'blade', 'stabbing'],
-        'Dagger weapon entry. A small, quick weapon.',
-        'inventory/weapons'
-    ));
+    // Process all inventory entries recursively
+    function processEntries(data, basePath) {
+        for (const [key, value] of Object.entries(data)) {
+            const path = `${basePath}/${key}`;
+            if (value.keywords && value.content) {
+                entries.push(generateEntryStructure(path, value.keywords, value.content, value.group));
+            } else if (typeof value === 'object') {
+                processEntries(value, path);
+            }
+        }
+    }
 
-    // Armor
-    entries.push(generateEntryStructure(
-        'inventory/armor/shield',
-        ['shield', 'defense', 'block', 'protection'],
-        'Shield armor entry. Provides defensive protection.',
-        'inventory/armor'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'inventory/armor/helmet',
-        ['helmet', 'head', 'cap', 'helm'],
-        'Helmet armor entry. Protects the head.',
-        'inventory/armor'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'inventory/armor/plate',
-        ['plate', 'armor', 'mail', 'protection'],
-        'Plate armor entry. Heavy protective armor.',
-        'inventory/armor'
-    ));
-
-    // Items
-    entries.push(generateEntryStructure(
-        'inventory/items/potion',
-        ['potion', 'drink', 'healing', 'elixir'],
-        'Potion item entry. A consumable magical item.',
-        'inventory/items'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'inventory/items/key',
-        ['key', 'lock', 'unlock', 'open'],
-        'Key item entry. Used to unlock doors and containers.',
-        'inventory/items'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'inventory/items/scroll',
-        ['scroll', 'paper', 'spell', 'document'],
-        'Scroll item entry. Contains magical or written information.',
-        'inventory/items'
-    ));
-
-    // Currency
-    entries.push(generateEntryStructure(
-        'inventory/currency/gold',
-        ['gold', 'coin', 'money', 'wealth'],
-        'Gold currency entry. The primary form of currency.',
-        'inventory/currency'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'inventory/currency/silver',
-        ['silver', 'shilling', 'change', 'small money'],
-        'Silver currency entry. Smaller denomination currency.',
-        'inventory/currency'
-    ));
+    processEntries(inventory, 'inventory');
 
     debugLog(`Built ${entries.length} inventory entries`, 'Lorebook Builder');
     return entries;
 }
 
 /**
- * Builds user state lorebook entries (outfit, skills, stats, status effects)
+ * Builds user state lorebook entries (outfit, skills, stats, status effects) from template
  * @returns {Array} Array of user state entry objects
  */
-export function buildUserStateTemplate() {
+export async function buildUserStateTemplate() {
     debugLog('Building user state template', 'Lorebook Builder');
     
+    const template = await loadTemplateFromJSON();
+    const userState = template.userState || {};
     const entries = [];
 
-    // Outfit
-    entries.push(generateEntryStructure(
-        'userState/outfit/head',
-        ['hat', 'helmet', 'crown', 'headgear'],
-        'Head outfit entry. Items worn on the head.',
-        'userState/outfit'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/outfit/neck',
-        ['necklace', 'amulet', 'choker', 'collar'],
-        'Neck outfit entry. Items worn around the neck.',
-        'userState/outfit'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/outfit/torso',
-        ['shirt', 'armor', 'robe', 'chest'],
-        'Torso outfit entry. Items worn on the torso.',
-        'userState/outfit'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/outfit/legs',
-        ['pants', 'boots', 'greaves', 'legwear'],
-        'Legs outfit entry. Items worn on the legs.',
-        'userState/outfit'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/outfit/hands',
-        ['gloves', 'bracers', 'wristbands', 'handwear'],
-        'Hands outfit entry. Items worn on the hands.',
-        'userState/outfit'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/outfit/accessories',
-        ['ring', 'bracelet', 'jewelry', 'ornament'],
-        'Accessories outfit entry. Additional decorative items.',
-        'userState/outfit'
-    ));
+    // Process all user state entries recursively
+    function processEntries(data, basePath) {
+        for (const [key, value] of Object.entries(data)) {
+            const path = `${basePath}/${key}`;
+            if (value.keywords && value.content) {
+                entries.push(generateEntryStructure(path, value.keywords, value.content, value.group));
+            } else if (typeof value === 'object') {
+                processEntries(value, path);
+            }
+        }
+    }
 
-    // Skills
-    entries.push(generateEntryStructure(
-        'userState/skills/combat',
-        ['combat', 'fight', 'battle', 'warfare'],
-        'Combat skill entry. Abilities related to fighting.',
-        'userState/skills'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/skills/magic',
-        ['magic', 'spell', 'sorcery', 'mana'],
-        'Magic skill entry. Abilities related to spellcasting.',
-        'userState/skills'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/skills/stealth',
-        ['stealth', 'sneak', 'hide', 'stealth'],
-        'Stealth skill entry. Abilities related to avoiding detection.',
-        'userState/skills'
-    ));
-
-    // Stats
-    entries.push(generateEntryStructure(
-        'userState/stats/strength',
-        ['strength', 'power', 'muscle', 'force'],
-        'Strength stat entry. Physical power and might.',
-        'userState/stats'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/stats/intelligence',
-        ['intelligence', 'wisdom', 'mind', 'brain'],
-        'Intelligence stat entry. Mental acuity and knowledge.',
-        'userState/stats'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/stats/health',
-        ['health', 'hp', 'vitality', 'life'],
-        'Health stat entry. Life force and vitality.',
-        'userState/stats'
-    ));
-
-    // Status Effects
-    entries.push(generateEntryStructure(
-        'userState/statusEffects/poisoned',
-        ['poisoned', 'venom', 'toxin', 'corrupted'],
-        'Poisoned status effect. Affected by poison.',
-        'userState/statusEffects'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/statusEffects/buffed',
-        ['buffed', 'enhanced', 'boosted', 'strengthened'],
-        'Buffed status effect. Temporarily enhanced abilities.',
-        'userState/statusEffects'
-    ));
-    
-    entries.push(generateEntryStructure(
-        'userState/statusEffects/weakened',
-        ['weakened', 'debuffed', 'diminished', 'reduced'],
-        'Weakened status effect. Temporarily reduced abilities.',
-        'userState/statusEffects'
-    ));
+    processEntries(userState, 'userState');
 
     debugLog(`Built ${entries.length} user state entries`, 'Lorebook Builder');
     return entries;
