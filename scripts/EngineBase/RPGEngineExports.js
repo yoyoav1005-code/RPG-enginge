@@ -1,5 +1,5 @@
 /**
- * @file Central import/export hub for all RPG Engine extension modules.
+ * @file Central import/export hub for all GuidedGenerations extension modules.
  * This file serves as a single point of entry for all imports, eliminating path depth issues.
  */
 

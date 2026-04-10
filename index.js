@@ -2,6 +2,7 @@
 
 import { extension_settings, debugLog, debugWarn } from "./scripts/EngineBase/RPGEngineExports.js";
 import { saveSettingsDebounced } from "../../../../script.js";
+import { getContext, extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
 
 const MODULE_NAME = 'rpg_engine';
 
