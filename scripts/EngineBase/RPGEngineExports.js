@@ -55,5 +55,11 @@ export {
     convertTemplateToEntries 
 };
 
+// Import and export state detection modules
+import { PromptManager } from './promptManager.js';
+import { UserStateDetector } from './userStateDetector.js';
+import { LorebookUpdater } from './lorebookUpdater.js';
+export { PromptManager, UserStateDetector, LorebookUpdater };
+
 // Export extension_settings for use by other modules
 export { getContext, extension_settings, renderExtensionTemplateAsync, chat, eventSource, event_types, saveChatConditional, addOneMessage };

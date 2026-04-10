@@ -9,7 +9,10 @@ import {
     exportTemplateToJSON,
     importTemplateFromJSON,
     saveTemplateToFile,
-    loadTemplateFromFile 
+    loadTemplateFromFile,
+    PromptManager,
+    UserStateDetector,
+    LorebookUpdater
 } from "./scripts/EngineBase/RPGEngineExports.js";
 
 const MODULE_NAME = 'rpg_engine';
@@ -22,6 +25,9 @@ async function initializeRPGExtension() {
         
         // Initialize settings first
         initSettings();
+        
+        // Initialize prompt manager and state detection system
+        await initializeStateDetectionSystem();
         
         // Register macros for game state
         registerGameMacros();
@@ -38,6 +44,29 @@ async function initializeRPGExtension() {
         debugLog('Extension loaded successfully', 'RPG Engine');
     } catch (error) {
         console.error('[RPG Engine] Initialization failed:', error);
+    }
+}
+
+async function initializeStateDetectionSystem() {
+    try {
+        // Initialize the prompt manager to load prompts
+        const promptManager = new PromptManager();
+        
+        // Load the state detection prompt
+        await promptManager.loadPrompt('state-detection');
+        debugLog('State detection prompt loaded', 'State Detection');
+        
+        // Load the lorebook update prompt
+        await promptManager.loadPrompt('lorebook-update');
+        debugLog('Lorebook update prompt loaded', 'State Detection');
+        
+        // Load the state extraction prompt
+        await promptManager.loadPrompt('state-extraction');
+        debugLog('State extraction prompt loaded', 'State Detection');
+        
+        debugLog('State detection system initialized successfully', 'State Detection');
+    } catch (error) {
+        debugWarn('Failed to initialize state detection system:', error, 'State Detection');
     }
 }
 
@@ -339,9 +368,108 @@ function getActiveNPCs() {
     return (extension_settings[MODULE_NAME]?.activeNPCs || []).join(', ') || 'No active NPCs';
 }
 
-function updateGameStateFromChat() {
-    // Parse chat to update game state
-    // This is where you'd implement logic to track location, NPCs, etc.
+async function updateGameStateFromChat() {
+    if (!extension_settings[MODULE_NAME]?.enabled) {
+        debugLog('RPG Engine disabled, skipping state update', 'State Detection');
+        return;
+    }
+
+    try {
+        const context = getContext();
+        const messages = context.getMessages();
+        
+        if (!messages || messages.length === 0) {
+            debugLog('No messages to process', 'State Detection');
+            return;
+        }
+
+        // Get the most recent messages (last 10)
+        const recentMessages = messages.slice(-10);
+        const messageText = recentMessages.map(msg => `${msg.role}: ${msg.text}`).join('\n');
+
+        debugLog('Starting state detection from chat messages', 'State Detection');
+
+        // Use UserStateDetector to extract state changes
+        const detector = new UserStateDetector();
+        const detectedStates = await detector.detectStates(messageText);
+
+        if (detectedStates && detectedStates.length > 0) {
+            debugLog(`Detected ${detectedStates.length} state changes`, 'State Detection');
+
+            // Use LorebookUpdater to apply changes to lorebooks
+            const updater = new LorebookUpdater();
+            
+            for (const state of detectedStates) {
+                debugLog(`Processing state change: ${state.type} - ${state.value}`, 'State Detection');
+                
+                // Apply state changes to extension settings
+                applyStateChange(state);
+                
+                // Update lorebooks with the new state
+                await updater.updateLorebook(state);
+            }
+
+            debugLog('State update completed successfully', 'State Detection');
+        } else {
+            debugLog('No state changes detected', 'State Detection');
+        }
+    } catch (error) {
+        debugWarn('Error updating game state from chat:', error, 'State Detection');
+    }
+}
+
+function applyStateChange(state) {
+    const settings = extension_settings[MODULE_NAME];
+    if (!settings) return;
+
+    switch (state.type) {
+        case 'location':
+            settings.location = state.value;
+            debugLog(`Location updated to: ${state.value}`, 'State Detection');
+            break;
+        case 'time':
+            settings.time = state.value;
+            debugLog(`Time updated to: ${state.value}`, 'State Detection');
+            break;
+        case 'quest':
+            settings.quest = state.value;
+            debugLog(`Quest updated to: ${state.value}`, 'State Detection');
+            break;
+        case 'item':
+            if (state.action === 'add') {
+                settings.inventory.push(state.value);
+                debugLog(`Item added: ${state.value}`, 'State Detection');
+            } else if (state.action === 'remove') {
+                const index = settings.inventory.indexOf(state.value);
+                if (index > -1) {
+                    settings.inventory.splice(index, 1);
+                    debugLog(`Item removed: ${state.value}`, 'State Detection');
+                }
+            }
+            break;
+        case 'npc':
+            if (state.action === 'add') {
+                if (!settings.activeNPCs.includes(state.value)) {
+                    settings.activeNPCs.push(state.value);
+                    debugLog(`NPC added: ${state.value}`, 'State Detection');
+                }
+            } else if (state.action === 'remove') {
+                const npcIndex = settings.activeNPCs.indexOf(state.value);
+                if (npcIndex > -1) {
+                    settings.activeNPCs.splice(npcIndex, 1);
+                    debugLog(`NPC removed: ${state.value}`, 'State Detection');
+                }
+            }
+            break;
+        case 'gamestate':
+            settings.gameState = state.value;
+            debugLog(`Game state updated: ${state.value}`, 'State Detection');
+            break;
+        default:
+            debugWarn(`Unknown state type: ${state.type}`, 'State Detection');
+    }
+
+    saveSettingsDebounced();
 }
 
 /**

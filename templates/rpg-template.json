@@ -1,0 +1,242 @@
+{
+  "questData": {
+    "mainQuestData": {
+      "keywords": ["main quest", "primary objective", "current quest", "mission"],
+      "content": "Main quest data entry. This tracks the primary objective and current quest status.",
+      "group": "questData"
+    },
+    "sideQuests": {
+      "keywords": ["side quest", "optional mission", "secondary objective", "bonus quest"],
+      "content": "Side quest data entry. Tracks optional missions and secondary objectives.",
+      "group": "questData"
+    },
+    "questItems": {
+      "keywords": ["key item", "quest reward", "important item", "quest item"],
+      "content": "Quest items entry. Tracks key items and quest rewards.",
+      "group": "questData"
+    }
+  },
+  "gameState": {
+    "locations": {
+      "tavern": {
+        "keywords": ["tavern", "inn", "pub", "bar"],
+        "content": "Tavern location entry. A common gathering place for adventurers.",
+        "group": "gameState/locations"
+      },
+      "cave": {
+        "keywords": ["cave", "dungeon", "underground", "tunnel"],
+        "content": "Cave location entry. Dark and mysterious underground passages.",
+        "group": "gameState/locations"
+      },
+      "town": {
+        "keywords": ["town", "city", "village", "settlement"],
+        "content": "Town location entry. A bustling center of commerce and culture.",
+        "group": "gameState/locations"
+      },
+      "hero": {
+        "keywords": ["hero", "protagonist", "chosen one", "hero"],
+        "content": "Hero NPC entry. The main protagonist of the story.",
+        "group": "gameState/majorNPCs"
+      },
+      "villain": {
+        "keywords": ["villain", "antagonist", "evil", "dark lord"],
+        "content": "Villain NPC entry. The main antagonist opposing the hero.",
+        "group": "gameState/majorNPCs"
+      },
+      "ally": {
+        "keywords": ["ally", "friend", "companion", "support"],
+        "content": "Ally NPC entry. A helpful companion aiding the hero.",
+        "group": "gameState/majorNPCs"
+      },
+      "mentor": {
+        "keywords": ["mentor", "teacher", "guide", "wise old man"],
+        "content": "Mentor NPC entry. A wise figure providing guidance and training.",
+        "group": "gameState/majorNPCs"
+      },
+      "merchant": {
+        "keywords": ["merchant", "shopkeeper", "vendor", "seller"],
+        "content": "Merchant NPC entry. Sells various goods and items.",
+        "group": "gameState/NPCs"
+      },
+      "guard": {
+        "keywords": ["guard", "soldier", "patrol", "security"],
+        "content": "Guard NPC entry. Provides security and protection.",
+        "group": "gameState/NPCs"
+      },
+      "day": {
+        "keywords": ["day", "morning", "afternoon", "noon"],
+        "content": "Day time entry. The bright hours of daylight.",
+        "group": "gameState/time"
+      },
+      "night": {
+        "keywords": ["night", "evening", "dark", "moonlight"],
+        "content": "Night time entry. The dark hours under the moon.",
+        "group": "gameState/time"
+      },
+      "hour": {
+        "keywords": ["hour", "time", "moment", "instant"],
+        "content": "Hour time entry. Specific time tracking.",
+        "group": "gameState/time"
+      },
+      "kingdom": {
+        "keywords": ["kingdom", "realm", "nation", "country"],
+        "content": "Kingdom world state entry. The current state of the kingdom.",
+        "group": "gameState/worldState"
+      },
+      "empire": {
+        "keywords": ["empire", "imperial", "dynasty", "throne"],
+        "content": "Empire world state entry. The current state of the empire.",
+        "group": "gameState/worldState"
+      },
+      "war": {
+        "keywords": ["war", "conflict", "battle", "fighting"],
+        "content": "War world state entry. Current conflicts and battles.",
+        "group": "gameState/worldState"
+      }
+    }
+  },
+  "inventory": {
+    "weapons": {
+      "sword": {
+        "keywords": ["sword", "blade", "steel", "weapon"],
+        "content": "Sword weapon entry. A versatile melee weapon.",
+        "group": "inventory/weapons"
+      },
+      "bow": {
+        "keywords": ["bow", "arrow", "ranged", "quiver"],
+        "content": "Bow weapon entry. A ranged weapon for distance attacks.",
+        "group": "inventory/weapons"
+      },
+      "dagger": {
+        "keywords": ["dagger", "knife", "blade", "stabbing"],
+        "content": "Dagger weapon entry. A small, quick weapon.",
+        "group": "inventory/weapons"
+      },
+      "shield": {
+        "keywords": ["shield", "defense", "block", "protection"],
+        "content": "Shield armor entry. Provides defensive protection.",
+        "group": "inventory/armor"
+      },
+      "helmet": {
+        "keywords": ["helmet", "head", "cap", "helm"],
+        "content": "Helmet armor entry. Protects the head.",
+        "group": "inventory/armor"
+      },
+      "plate": {
+        "keywords": ["plate", "armor", "mail", "protection"],
+        "content": "Plate armor entry. Heavy protective armor.",
+        "group": "inventory/armor"
+      },
+      "potion": {
+        "keywords": ["potion", "drink", "healing", "elixir"],
+        "content": "Potion item entry. A consumable magical item.",
+        "group": "inventory/items"
+      },
+      "key": {
+        "keywords": ["key", "lock", "unlock", "open"],
+        "content": "Key item entry. Used to unlock doors and containers.",
+        "group": "inventory/items"
+      },
+      "scroll": {
+        "keywords": ["scroll", "paper", "spell", "document"],
+        "content": "Scroll item entry. Contains magical or written information.",
+        "group": "inventory/items"
+      },
+      "gold": {
+        "keywords": ["gold", "coin", "money", "wealth"],
+        "content": "Gold currency entry. The primary form of currency.",
+        "group": "inventory/currency"
+      },
+      "silver": {
+        "keywords": ["silver", "shilling", "change", "small money"],
+        "content": "Silver currency entry. Smaller denomination currency.",
+        "group": "inventory/currency"
+      }
+    }
+  },
+  "userState": {
+    "outfit": {
+      "head": {
+        "keywords": ["hat", "helmet", "crown", "headgear"],
+        "content": "Head outfit entry. Items worn on the head.",
+        "group": "userState/outfit"
+      },
+      "neck": {
+        "keywords": ["necklace", "amulet", "choker", "collar"],
+        "content": "Neck outfit entry. Items worn around the neck.",
+        "group": "userState/outfit"
+      },
+      "torso": {
+        "keywords": ["shirt", "armor", "robe", "chest"],
+        "content": "Torso outfit entry. Items worn on the torso.",
+        "group": "userState/outfit"
+      },
+      "legs": {
+        "keywords": ["pants", "boots", "greaves", "legwear"],
+        "content": "Legs outfit entry. Items worn on the legs.",
+        "group": "userState/outfit"
+      },
+      "hands": {
+        "keywords": ["gloves", "bracers", "wristbands", "handwear"],
+        "content": "Hands outfit entry. Items worn on the hands.",
+        "group": "userState/outfit"
+      },
+      "accessories": {
+        "keywords": ["ring", "bracelet", "jewelry", "ornament"],
+        "content": "Accessories outfit entry. Additional decorative items.",
+        "group": "userState/outfit"
+      }
+    },
+    "skills": {
+      "combat": {
+        "keywords": ["combat", "fight", "battle", "warfare"],
+        "content": "Combat skill entry. Abilities related to fighting.",
+        "group": "userState/skills"
+      },
+      "magic": {
+        "keywords": ["magic", "spell", "sorcery", "mana"],
+        "content": "Magic skill entry. Abilities related to spellcasting.",
+        "group": "userState/skills"
+      },
+      "stealth": {
+        "keywords": ["stealth", "sneak", "hide", "stealth"],
+        "content": "Stealth skill entry. Abilities related to avoiding detection.",
+        "group": "userState/skills"
+      }
+    },
+    "stats": {
+      "strength": {
+        "keywords": ["strength", "power", "muscle", "force"],
+        "content": "Strength stat entry. Physical power and might.",
+        "group": "userState/stats"
+      },
+      "intelligence": {
+        "keywords": ["intelligence", "wisdom", "mind", "brain"],
+        "content": "Intelligence stat entry. Mental acuity and knowledge.",
+        "group": "userState/stats"
+      },
+      "health": {
+        "keywords": ["health", "hp", "vitality", "life"],
+        "content": "Health stat entry. Life force and vitality.",
+        "group": "userState/stats"
+      }
+    },
+    "statusEffects": {
+      "poisoned": {
+        "keywords": ["poisoned", "venom", "toxin", "corrupted"],
+        "content": "Poisoned status effect. Affected by poison.",
+        "group": "userState/statusEffects"
+      },
+      "buffed": {
+        "keywords": ["buffed", "enhanced", "boosted", "strengthened"],
+        "content": "Buffed status effect. Temporarily enhanced abilities.",
+        "group": "userState/statusEffects"
+      },
+      "weakened": {
+        "keywords": ["weakened", "debuffed", "diminished", "reduced"],
+        "content": "Weakened status effect. Temporarily reduced abilities.",
+        "group": "userState/statusEffects"
+      }
+    }
+  }
+}
