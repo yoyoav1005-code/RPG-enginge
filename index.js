@@ -1,6 +1,6 @@
 // RPG Engine Extension - Bare Bones Implementation
 
-import { extension_settings, debugLog, debugWarn, getContext, extension_settings, renderExtensionTemplateAsync } from "./scripts/EngineBase/RPGEngineExports.js";
+import { extension_settings, debugLog, debugWarn, getContext, renderExtensionTemplateAsync } from "./scripts/EngineBase/RPGEngineExports.js";
 import { saveSettingsDebounced } from "../../../../script.js";
 
 const MODULE_NAME = 'rpg_engine';
