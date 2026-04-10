@@ -5,7 +5,13 @@
  */
 
 import { debugLog, debugWarn, debugError, isDebugModeEnabled } from './debug.js';
-import { extension_settings } from './RPGEngineExports.js';
+import { 
+    createNewWorldInfo, 
+    createWorldInfoEntry, 
+    saveWorldInfo, 
+    worldInfoCache,
+    extension_settings 
+} from './RPGEngineExports.js';
 
 const MODULE_NAME = 'rpg_engine';
 
@@ -15,12 +21,13 @@ const MODULE_NAME = 'rpg_engine';
  * @returns {Object|null} The world info data or null if not found
  */
 function getWorldInfoData(name) {
+    // Try to use imported worldInfoCache first
+    if (worldInfoCache) {
+        return worldInfoCache.get(name) || null;
+    }
+    // Fallback to window scope
     if (typeof window !== 'undefined' && window.worldInfoCache) {
         return window.worldInfoCache.get(name) || null;
-    }
-    // Fallback for module context
-    if (typeof worldInfoCache !== 'undefined') {
-        return worldInfoCache.get(name) || null;
     }
     return null;
 }
