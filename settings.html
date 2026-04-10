@@ -12,6 +12,28 @@
     </div>
     
     <div class="setting-row">
+        <label for="rpg-debug-mode">Enable Debug Logging</label>
+        <input type="checkbox" id="rpg-debug-mode">
+    </div>
+    
+    <hr>
+    
+    <h4>Template Lorebook Builder</h4>
+    
+    <div class="setting-row">
+        <button id="rpg-build-template" class="btn-primary">Build Template Lorebook</button>
+        <button id="rpg-export-template" class="btn-secondary">Export Template</button>
+        <button id="rpg-import-template" class="btn-secondary">Import Template</button>
+    </div>
+    
+    <div class="setting-row">
+        <label for="rpg-template-name">Template Name</label>
+        <input type="text" id="rpg-template-name" placeholder="RPG_Template" value="RPG_Template">
+    </div>
+    
+    <hr>
+    
+    <div class="setting-row">
         <label for="rpg-quest">Active Quest</label>
         <textarea id="rpg-quest" placeholder="Enter the current quest objective..."></textarea>
     </div>
@@ -95,9 +117,64 @@
         document.getElementById('status-items').textContent = `${items} item${items !== 1 ? 's' : ''}`;
     }
     
+    // Build template lorebook
+    async function buildTemplate() {
+        const templateName = document.getElementById('rpg-template-name').value || 'RPG_Template';
+        try {
+            // Import the lorebook module dynamically
+            const { createTemplateLorebook, saveTemplateToFile } = await import('./scripts/EngineBase/lorebook.js');
+            const template = await createTemplateLorebook(templateName);
+            await saveTemplateToFile(template, `${templateName}.json`);
+            toastr.info(`Template '${templateName}' created with ${template.entries.length} entries`, 'RPG Engine');
+        } catch (error) {
+            console.error(`Failed to build template: ${error.message}`);
+            toastr.error(`Failed to build template: ${error.message}`, 'RPG Engine');
+        }
+    }
+    
+    // Export current template
+    async function exportTemplate() {
+        const templateName = document.getElementById('rpg-template-name').value || 'RPG_Template';
+        try {
+            const { createTemplateLorebook, saveTemplateToFile } = await import('./scripts/EngineBase/lorebook.js');
+            const template = await createTemplateLorebook(templateName);
+            await saveTemplateToFile(template, `${templateName}.json`);
+            toastr.info(`Template exported to ${templateName}.json`, 'RPG Engine');
+        } catch (error) {
+            console.error(`Failed to export template: ${error.message}`);
+            toastr.error(`Failed to export template: ${error.message}`, 'RPG Engine');
+        }
+    }
+    
+    // Import template from file
+    function importTemplate() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            try {
+                const { loadTemplateFromFile } = await import('./scripts/EngineBase/lorebook.js');
+                const template = await loadTemplateFromFile(file);
+                toastr.info(`Template '${template.name}' imported with ${template.entries.length} entries`, 'RPG Engine');
+            } catch (error) {
+                console.error(`Failed to import template: ${error.message}`);
+                toastr.error(`Failed to import template: ${error.message}`, 'RPG Engine');
+            }
+        };
+        
+        input.click();
+    }
+    
     // Event listeners
     document.getElementById('rpg-save').addEventListener('click', saveSettings);
     document.getElementById('rpg-reset').addEventListener('click', resetSettings);
+    document.getElementById('rpg-build-template').addEventListener('click', buildTemplate);
+    document.getElementById('rpg-export-template').addEventListener('click', exportTemplate);
+    document.getElementById('rpg-import-template').addEventListener('click', importTemplate);
     
     // Load settings on init
     loadSettings();

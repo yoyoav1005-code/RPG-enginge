@@ -1,5 +1,5 @@
 /**
- * @file Central import/export hub for all GuidedGenerations extension modules.
+ * @file Central import/export hub for all RPG Engine extension modules.
  * This file serves as a single point of entry for all imports, eliminating path depth issues.
  */
 
@@ -13,6 +13,32 @@ const extensionName = "RPG Engine";
 // Import and export debug functions
 import { debugLog, debugWarn, debugError, isDebugModeEnabled } from './debug.js';
 export { debugLog, debugWarn, debugError, isDebugModeEnabled };
+
+// Import and export lorebook builder functions
+import { 
+    createTemplateLorebook,
+    buildQuestDataTemplate,
+    buildGameStateTemplate,
+    buildInventoryTemplate,
+    buildUserStateTemplate,
+    generateEntryStructure,
+    exportTemplateToJSON,
+    importTemplateFromJSON,
+    saveTemplateToFile,
+    loadTemplateFromFile
+} from './lorebook.js';
+export { 
+    createTemplateLorebook,
+    buildQuestDataTemplate,
+    buildGameStateTemplate,
+    buildInventoryTemplate,
+    buildUserStateTemplate,
+    generateEntryStructure,
+    exportTemplateToJSON,
+    importTemplateFromJSON,
+    saveTemplateToFile,
+    loadTemplateFromFile 
+};
 
 // Export extension_settings for use by other modules
 export {  getContext, extension_settings, renderExtensionTemplateAsync, chat, eventSource, event_types, saveChatConditional, addOneMessage };

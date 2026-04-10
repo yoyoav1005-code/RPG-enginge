@@ -1,9 +1,16 @@
-// RPG Engine Extension - Bare Bones Implementation
+// RPG Engine Extension - Template Lorebook Builder Feature
 // Import necessary functions/objects from SillyTavern
 import { getContext, loadExtensionSettings, extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { saveSettingsDebounced } from "../../../../script.js";
-//// 
-import { debugLog, debugWarn } from "./scripts/EngineBase/RPGEngineExports.js";
+import { 
+    debugLog, 
+    debugWarn, 
+    createTemplateLorebook,
+    exportTemplateToJSON,
+    importTemplateFromJSON,
+    saveTemplateToFile,
+    loadTemplateFromFile 
+} from "./scripts/EngineBase/RPGEngineExports.js";
 
 const MODULE_NAME = 'rpg_engine';
 
@@ -117,6 +124,23 @@ function registerSlashCommands() {
             toastr.info(`Current time: ${time}`, 'RPG Engine');
         }
     }, [], 'View or set game time', true, true);
+    
+    // /buildtemplate - Build template lorebook
+    registerSlashCommand('buildtemplate', (...args) => {
+        const lorebookName = args.join(' ') || 'RPG_Template';
+        buildTemplateLorebook(lorebookName);
+    }, [], 'Build RPG template lorebook', true, true);
+    
+    // /exporttemplate - Export template to JSON
+    registerSlashCommand('exporttemplate', (...args) => {
+        const filename = args.join(' ') || 'rpg_template.json';
+        exportCurrentTemplate(filename);
+    }, [], 'Export current template to JSON file', true, true);
+    
+    // /importtemplate - Import template from JSON file
+    registerSlashCommand('importtemplate', () => {
+        importTemplateDialog();
+    }, [], 'Import template from JSON file', true, true);
     
     debugLog('Slash commands registered', 'RPG Engine');
 }
@@ -301,6 +325,73 @@ function getActiveNPCs() {
 function updateGameStateFromChat() {
     // Parse chat to update game state
     // This is where you'd implement logic to track location, NPCs, etc.
+}
+
+/**
+ * Builds a template lorebook with the specified name
+ * @param {string} lorebookName - Name of the lorebook to build
+ */
+async function buildTemplateLorebook(lorebookName) {
+    debugLog(`Building template lorebook: ${lorebookName}`, 'Lorebook Builder');
+    
+    try {
+        const template = await createTemplateLorebook(lorebookName);
+        toastr.info(`Template lorebook '${lorebookName}' created with ${template.entries.length} entries`, 'RPG Engine');
+        
+        // Export to JSON for user to save
+        await saveTemplateToFile(template, `${lorebookName}.json`);
+        debugLog(`Template saved as ${lorebookName}.json`, 'Lorebook Builder');
+    } catch (error) {
+        console.error(`Failed to build template lorebook: ${error.message}`);
+        toastr.error(`Failed to build template lorebook: ${error.message}`, 'RPG Engine');
+    }
+}
+
+/**
+ * Exports the current template to a JSON file
+ * @param {string} filename - Name of the file to export to
+ */
+async function exportCurrentTemplate(filename) {
+    debugLog(`Exporting current template to ${filename}`, 'Lorebook Builder');
+    
+    try {
+        // Create a default template if none exists
+        const template = await createTemplateLorebook('Current_Template');
+        await saveTemplateToFile(template, filename);
+        toastr.info(`Template exported to ${filename}`, 'RPG Engine');
+        debugLog(`Template exported successfully`, 'Lorebook Builder');
+    } catch (error) {
+        console.error(`Failed to export template: ${error.message}`);
+        toastr.error(`Failed to export template: ${error.message}`, 'RPG Engine');
+    }
+}
+
+/**
+ * Opens a dialog to import a template from a JSON file
+ */
+function importTemplateDialog() {
+    debugLog('Opening import template dialog', 'Lorebook Builder');
+    
+    // Create a file input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const template = await loadTemplateFromFile(file);
+            toastr.info(`Template '${template.name}' imported with ${template.entries.length} entries`, 'RPG Engine');
+            debugLog(`Template imported successfully`, 'Lorebook Builder');
+        } catch (error) {
+            console.error(`Failed to import template: ${error.message}`);
+            toastr.error(`Failed to import template: ${error.message}`, 'RPG Engine');
+        }
+    };
+    
+    input.click();
 }
 
 // Initialize with async wrapper
