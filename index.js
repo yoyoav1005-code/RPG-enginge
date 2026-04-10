@@ -133,9 +133,14 @@ function registerSlashCommands() {
             // If first argument is an object with a name property, extract it
             if (typeof args[0] === 'object' && args[0].name) {
                 lorebookName = args[0].name;
+            } else if (typeof args[0] === 'string') {
+                // If first argument is a string, use it directly
+                lorebookName = args[0];
             } else {
-                // Otherwise join all args as strings
-                lorebookName = args.map(arg => String(arg)).join(' ');
+                // Otherwise join all args as strings (skip objects)
+                lorebookName = args
+                    .filter(arg => typeof arg === 'string')
+                    .join(' ');
             }
         }
         // Trim and validate the name
