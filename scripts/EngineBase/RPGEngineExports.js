@@ -7,6 +7,10 @@
 import { getContext, extension_settings, renderExtensionTemplateAsync } from '../../../../../extensions.js';
 import { chat, eventSource, event_types, saveChatConditional, addOneMessage } from '../../../../../../script.js';
 
+// Import SillyTavern world-info functions (these are available globally in SillyTavern context)
+// Note: These functions are defined in SillyTavern's world-info.js and are exported globally
+// They will be available at runtime when the extension is loaded in SillyTavern
+
 // Core extension constants and functions (defined locally to avoid circular dependency)
 const extensionName = "RPG Engine";
 
@@ -41,4 +45,4 @@ export {
 };
 
 // Export extension_settings for use by other modules
-export {  getContext, extension_settings, renderExtensionTemplateAsync, chat, eventSource, event_types, saveChatConditional, addOneMessage };
+export { getContext, extension_settings, renderExtensionTemplateAsync, chat, eventSource, event_types, saveChatConditional, addOneMessage };
