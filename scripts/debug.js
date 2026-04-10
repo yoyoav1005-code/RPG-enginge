@@ -1,7 +1,7 @@
 // RPG Engine - Debug Utilities Module
 // Provides conditional debug logging that respects user's debug mode setting
 
-import { extension_settings } from "../../../extensions.js";
+import { extension_settings } from "./EngineBase/RPGEngineExports.js";
 
 const MODULE_NAME = 'rpg_engine';
 

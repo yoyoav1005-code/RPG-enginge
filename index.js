@@ -1,8 +1,7 @@
 // RPG Engine Extension - Bare Bones Implementation
 
-import { extension_settings } from "../../../extensions.js";
+import { extension_settings, debugLog, debugWarn } from "./scripts/EngineBase/RPGEngineExports.js";
 import { saveSettingsDebounced } from "../../../../script.js";
-import { debugLog, debugWarn } from "./scripts/debug.js";
 
 const MODULE_NAME = 'rpg_engine';
 
