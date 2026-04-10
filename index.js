@@ -127,7 +127,19 @@ function registerSlashCommands() {
     
     // /buildtemplate - Build template lorebook
     registerSlashCommand('buildtemplate', (...args) => {
-        const lorebookName = args.join(' ') || 'RPG_Template';
+        // Extract the lorebook name from args (could be object or string)
+        let lorebookName;
+        if (args.length > 0) {
+            // If first argument is an object with a name property, extract it
+            if (typeof args[0] === 'object' && args[0].name) {
+                lorebookName = args[0].name;
+            } else {
+                // Otherwise join all args as strings
+                lorebookName = args.map(arg => String(arg)).join(' ');
+            }
+        }
+        // Trim and validate the name
+        lorebookName = lorebookName?.trim() || 'RPG_Template';
         buildTemplateLorebook(lorebookName);
     }, [], 'Build RPG template lorebook', true, true);
     
