@@ -2,6 +2,7 @@
 
 import { extension_settings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
+import { debugLog, debugWarn } from "./scripts/debug.js";
 
 const MODULE_NAME = 'rpg_engine';
 
@@ -26,7 +27,7 @@ async function initializeRPGExtension() {
         // Create settings UI
         createSettingsUI();
         
-        console.log('[RPG Engine] Extension loaded successfully');
+        debugLog('Extension loaded successfully', 'RPG Engine');
     } catch (error) {
         console.error('[RPG Engine] Initialization failed:', error);
     }
@@ -37,6 +38,7 @@ function initSettings() {
         extension_settings[MODULE_NAME] = {
             enabled: true,
             autoUpdateGameState: true,
+            debugMode: false,
             quest: '',
             gameState: '',
             inventory: [],
@@ -45,7 +47,7 @@ function initSettings() {
             activeNPCs: []
         };
     }
-    console.log('[RPG Engine] Settings initialized');
+    debugLog('Settings initialized', 'RPG Engine');
 }
 
 function registerGameMacros() {
@@ -59,7 +61,7 @@ function registerGameMacros() {
     registerMacro('gametime', getTime);
     registerMacro('activenpcs', getActiveNPCs);
     
-    console.log('[RPG Engine] Macros registered');
+    debugLog('Macros registered', 'RPG Engine');
 }
 
 function registerSlashCommands() {
@@ -115,7 +117,7 @@ function registerSlashCommands() {
         }
     }, [], 'View or set game time', true, true);
     
-    console.log('[RPG Engine] Slash commands registered');
+    debugLog('Slash commands registered', 'RPG Engine');
 }
 
 function setupChatListeners() {
@@ -129,11 +131,11 @@ function setupChatListeners() {
         }
     });
     
-    console.log('[RPG Engine] Chat listeners setup');
+    debugLog('Chat listeners setup', 'RPG Engine');
 }
 
 function createSettingsUI() {
-    console.log('[RPG Engine] Creating settings UI...');
+    debugLog('Creating settings UI...', 'RPG Engine');
     
     const settingsHtml = `
         <div class="inline-drawer">
@@ -142,6 +144,10 @@ function createSettingsUI() {
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
+                <div class="flex-container">
+                    <label for="rpg-debug-mode">Enable Debug Logging</label>
+                    <input type="checkbox" id="rpg-debug-mode" ${extension_settings[MODULE_NAME]?.debugMode ? 'checked' : ''}>
+                </div>
                 <div class="flex-container">
                     <label for="rpg-enabled">Enable RPG Engine</label>
                     <input type="checkbox" id="rpg-enabled" ${extension_settings[MODULE_NAME]?.enabled ? 'checked' : ''}>
@@ -176,52 +182,58 @@ function createSettingsUI() {
     
     $("#extensions_settings").append(settingsHtml);
     
-    console.log('[RPG Engine] Settings HTML appended to page');
+    debugLog('Settings HTML appended to page', 'RPG Engine');
     
     // Event listeners for settings
+    $("#rpg-debug-mode").on("change", function() {
+        extension_settings[MODULE_NAME].debugMode = $(this).prop('checked');
+        saveSettingsDebounced();
+        debugLog('Debug mode setting changed to ' + $(this).prop('checked'), 'RPG Engine');
+    });
+    
     $("#rpg-enabled").on("change", function() {
         extension_settings[MODULE_NAME].enabled = $(this).prop('checked');
         saveSettingsDebounced();
-        console.log('[RPG Engine] Enabled setting changed');
+        debugLog('Enabled setting changed', 'RPG Engine');
     });
     
     $("#rpg-auto-update").on("change", function() {
         extension_settings[MODULE_NAME].autoUpdateGameState = $(this).prop('checked');
         saveSettingsDebounced();
-        console.log('[RPG Engine] Auto-update setting changed');
+        debugLog('Auto-update setting changed', 'RPG Engine');
     });
     
     $("#rpg-quest").on("change", function() {
         extension_settings[MODULE_NAME].quest = $(this).val();
         saveSettingsDebounced();
-        console.log('[RPG Engine] Quest setting changed');
+        debugLog('Quest setting changed', 'RPG Engine');
     });
     
     $("#rpg-location").on("change", function() {
         extension_settings[MODULE_NAME].location = $(this).val();
         saveSettingsDebounced();
-        console.log('[RPG Engine] Location setting changed');
+        debugLog('Location setting changed', 'RPG Engine');
     });
     
     $("#rpg-time").on("change", function() {
         extension_settings[MODULE_NAME].time = $(this).val();
         saveSettingsDebounced();
-        console.log('[RPG Engine] Time setting changed');
+        debugLog('Time setting changed', 'RPG Engine');
     });
     
     $("#rpg-gamestate").on("change", function() {
         extension_settings[MODULE_NAME].gameState = $(this).val();
         saveSettingsDebounced();
-        console.log('[RPG Engine] Game state setting changed');
+        debugLog('Game state setting changed', 'RPG Engine');
     });
     
     $("#rpg-inventory").on("change", function() {
         extension_settings[MODULE_NAME].inventory = $(this).val().split('\n').filter(line => line.trim());
         saveSettingsDebounced();
-        console.log('[RPG Engine] Inventory setting changed');
+        debugLog('Inventory setting changed', 'RPG Engine');
     });
     
-    console.log('[RPG Engine] Settings UI created successfully');
+    debugLog('Settings UI created successfully', 'RPG Engine');
 }
 
 // Game State Management Functions
