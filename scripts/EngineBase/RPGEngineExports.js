@@ -13,7 +13,7 @@ import {
     createWorldInfoEntry, 
     saveWorldInfo, 
     worldInfoCache 
-} from '../../../../../../world-info.js';
+} from '../../../../../world-info.js';
 
 // Export SillyTavern API functions for use by other modules
 export { createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, worldInfoCache };
