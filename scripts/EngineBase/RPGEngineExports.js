@@ -7,25 +7,13 @@
 import { getContext, extension_settings, renderExtensionTemplateAsync } from '../../../../../extensions.js';
 import { chat, eventSource, event_types, saveChatConditional, addOneMessage } from '../../../../../../script.js';
 
-// Import SillyTavern world-info functions from global scope
-// These functions are defined in SillyTavern's world-info.js and are available globally when running in SillyTavern
-let createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, worldInfoCache;
-
-// Try to get functions from window object first (browser context)
-if (typeof window !== 'undefined') {
-    createNewWorldInfo = window.createNewWorldInfo;
-    createWorldInfoEntry = window.createWorldInfoEntry;
-    saveWorldInfo = window.saveWorldInfo;
-    worldInfoCache = window.worldInfoCache;
-}
-
-// Fallback to globalThis if not in window
-if (!createNewWorldInfo && typeof globalThis !== 'undefined') {
-    createNewWorldInfo = globalThis.createNewWorldInfo;
-    createWorldInfoEntry = globalThis.createWorldInfoEntry;
-    saveWorldInfo = globalThis.saveWorldInfo;
-    worldInfoCache = globalThis.worldInfoCache;
-}
+// Import SillyTavern world-info functions directly from world-info.js
+import { 
+    createNewWorldInfo, 
+    createWorldInfoEntry, 
+    saveWorldInfo, 
+    worldInfoCache 
+} from '../../../../../../world-info.js';
 
 // Export SillyTavern API functions for use by other modules
 export { createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, worldInfoCache };
