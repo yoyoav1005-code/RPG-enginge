@@ -1,7 +1,9 @@
 // RPG Engine Extension - Bare Bones Implementation
-
-import { extension_settings, debugLog, debugWarn, getContext, renderExtensionTemplateAsync } from "./scripts/EngineBase/RPGEngineExports.js";
+// Import necessary functions/objects from SillyTavern
+import { getContext, loadExtensionSettings, extension_settings, renderExtensionTemplateAsync } from '../../../extensions.js';
 import { saveSettingsDebounced } from "../../../../script.js";
+//// 
+import { debugLog, debugWarn } from "./scripts/EngineBase/RPGEngineExports.js";
 
 const MODULE_NAME = 'rpg_engine';
 
