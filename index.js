@@ -12,10 +12,14 @@ import {
     loadTemplateFromFile,
     PromptManager,
     UserStateDetector,
-    LorebookUpdater
+    LorebookUpdater,
+    AutoLorebookDetectionSystem
 } from "./scripts/EngineBase/RPGEngineExports.js";
 
 const MODULE_NAME = 'rpg_engine';
+
+// Global instance of AutoLorebookDetectionSystem
+let autoLorebookSystem = null;
 
 async function initializeRPGExtension() {
     console.log('[RPG Engine] Starting initialization...');
@@ -28,6 +32,9 @@ async function initializeRPGExtension() {
         
         // Initialize prompt manager and state detection system
         await initializeStateDetectionSystem();
+        
+        // Initialize AutoLorebookDetectionSystem
+        await initializeAutoLorebookSystem();
         
         // Register macros for game state
         registerGameMacros();
@@ -70,6 +77,35 @@ async function initializeStateDetectionSystem() {
     }
 }
 
+async function initializeAutoLorebookSystem() {
+    try {
+        // Initialize LorebookUpdater and UserStateDetector
+        const lorebookUpdater = new LorebookUpdater();
+        await lorebookUpdater.initialize();
+        
+        const userStateDetector = new UserStateDetector();
+        await userStateDetector.initialize();
+        
+        // Create AutoLorebookDetectionSystem instance
+        autoLorebookSystem = new AutoLorebookDetectionSystem(lorebookUpdater, userStateDetector);
+        
+        // Enable if setting is true
+        if (extension_settings[MODULE_NAME]?.enableAutoLorebookUpdates) {
+            autoLorebookSystem.enable();
+            debugLog('AutoLorebookDetectionSystem enabled', 'AutoLorebook');
+        }
+        
+        // Mark app as initialized after a short delay
+        setTimeout(() => {
+            autoLorebookSystem.markAppInitialized();
+        }, 2000);
+        
+        debugLog('AutoLorebookDetectionSystem initialized successfully', 'AutoLorebook');
+    } catch (error) {
+        debugWarn('Failed to initialize AutoLorebookDetectionSystem:', error, 'AutoLorebook');
+    }
+}
+
 function initSettings() {
     if (!extension_settings[MODULE_NAME]) {
         extension_settings[MODULE_NAME] = {
@@ -81,7 +117,9 @@ function initSettings() {
             inventory: [],
             location: '',
             time: '',
-            activeNPCs: []
+            activeNPCs: [],
+            enableAutoLorebookUpdates: false,
+            autoLorebookPrompt: ''
         };
     }
     debugLog('Settings initialized', 'RPG Engine');
@@ -188,6 +226,15 @@ function registerSlashCommands() {
         importTemplateDialog();
     }, [], 'Import template from JSON file', true, true);
     
+    // /autolorebook - Manual trigger for auto lorebook updates
+    registerSlashCommand('autolorebook', () => {
+        if (autoLorebookSystem) {
+            autoLorebookSystem.manualTrigger();
+        } else {
+            toastr.error('AutoLorebookDetectionSystem not initialized', 'RPG Engine');
+        }
+    }, [], 'Manually trigger auto lorebook updates', true, true);
+    
     debugLog('Slash commands registered', 'RPG Engine');
 }
 
@@ -228,6 +275,10 @@ function createSettingsUI() {
                     <input type="checkbox" id="rpg-auto-update" ${extension_settings[MODULE_NAME]?.autoUpdateGameState ? 'checked' : ''}>
                 </div>
                 <div class="flex-container">
+                    <label for="rpg-auto-lorebook">Enable Auto Lorebook Updates (AI-powered)</label>
+                    <input type="checkbox" id="rpg-auto-lorebook" ${extension_settings[MODULE_NAME]?.enableAutoLorebookUpdates ? 'checked' : ''}>
+                </div>
+                <div class="flex-container">
                     <label for="rpg-quest">Active Quest</label>
                     <textarea id="rpg-quest" rows="3" placeholder="Enter the current quest objective...">${extension_settings[MODULE_NAME]?.quest || ''}</textarea>
                 </div>
@@ -247,6 +298,16 @@ function createSettingsUI() {
                     <label for="rpg-inventory">User Inventory (one item per line)</label>
                     <textarea id="rpg-inventory" rows="5" placeholder="Enter inventory items, one per line...">${(extension_settings[MODULE_NAME]?.inventory || []).join('\n')}</textarea>
                 </div>
+                <hr>
+                <h4>Auto Lorebook System Prompt</h4>
+                <div class="flex-container">
+                    <textarea id="rpg-auto-lorebook-prompt" rows="10" placeholder="AI system prompt for auto lorebook detection...">${extension_settings[MODULE_NAME]?.autoLorebookPrompt || ''}</textarea>
+                </div>
+                <div class="flex-container">
+                    <button id="rpg-reset-lorebook-prompt">Reset Prompt to Default</button>
+                    <button id="rpg-view-lorebook-prompt">View Current Prompt</button>
+                </div>
+                <div id="rpg-lorebook-status" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
             </div>
         </div>
     `;
@@ -272,6 +333,19 @@ function createSettingsUI() {
         extension_settings[MODULE_NAME].autoUpdateGameState = $(this).prop('checked');
         saveSettingsDebounced();
         debugLog('Auto-update setting changed', 'RPG Engine');
+    });
+    
+    $("#rpg-auto-lorebook").on("change", function() {
+        extension_settings[MODULE_NAME].enableAutoLorebookUpdates = $(this).prop('checked');
+        saveSettingsDebounced();
+        if (autoLorebookSystem) {
+            if (extension_settings[MODULE_NAME].enableAutoLorebookUpdates) {
+                autoLorebookSystem.enable();
+            } else {
+                autoLorebookSystem.disable();
+            }
+        }
+        debugLog('Auto lorebook setting changed', 'RPG Engine');
     });
     
     $("#rpg-quest").on("change", function() {
@@ -303,6 +377,51 @@ function createSettingsUI() {
         saveSettingsDebounced();
         debugLog('Inventory setting changed', 'RPG Engine');
     });
+    
+    // Auto lorebook prompt handlers
+    $("#rpg-auto-lorebook-prompt").on("change", function() {
+        extension_settings[MODULE_NAME].autoLorebookPrompt = $(this).val();
+        if (autoLorebookSystem) {
+            autoLorebookSystem.setPrompt($(this).val());
+        }
+        saveSettingsDebounced();
+        debugLog('Auto lorebook prompt changed', 'RPG Engine');
+    });
+    
+    $("#rpg-reset-lorebook-prompt").on("click", function() {
+        if (autoLorebookSystem) {
+            const defaultPrompt = autoLorebookSystem.resetToDefaultPrompt();
+            $("#rpg-auto-lorebook-prompt").val(autoLorebookSystem.systemPrompt);
+            extension_settings[MODULE_NAME].autoLorebookPrompt = autoLorebookSystem.systemPrompt;
+            saveSettingsDebounced();
+            toastr.info(defaultPrompt, 'RPG Engine');
+        }
+    });
+    
+    $("#rpg-view-lorebook-prompt").on("click", function() {
+        if (autoLorebookSystem) {
+            toastr.info(autoLorebookSystem.systemPrompt, 'Current Auto Lorebook Prompt');
+        }
+    });
+    
+    // Update status display
+    function updateLorebookStatus() {
+        if (autoLorebookSystem) {
+            const status = autoLorebookSystem.getStatus();
+            const statusHtml = `
+                <div><strong>Status:</strong> ${status.enabled ? 'Enabled' : 'Disabled'}</div>
+                <div><strong>Processing:</strong> ${status.isProcessing ? 'Yes' : 'No'}</div>
+                <div><strong>Failures:</strong> ${status.consecutiveFailures}/${status.maxConsecutiveFailures}</div>
+                <div><strong>Retries:</strong> ${status.currentRetryCount}/${status.maxRetries}</div>
+                <div><strong>App Initialized:</strong> ${status.appInitialized ? 'Yes' : 'No'}</div>
+            `;
+            $("#rpg-lorebook-status").html(statusHtml);
+        }
+    }
+    
+    // Update status every 5 seconds
+    setInterval(updateLorebookStatus, 5000);
+    updateLorebookStatus(); // Initial update
     
     debugLog('Settings UI created successfully', 'RPG Engine');
 }

@@ -59,7 +59,8 @@ export {
 import { PromptManager } from './promptManager.js';
 import { UserStateDetector } from './userStateDetector.js';
 import { LorebookUpdater } from './lorebookUpdater.js';
-export { PromptManager, UserStateDetector, LorebookUpdater };
+import { AutoLorebookDetectionSystem } from './autoLorebookDetectionSystem.js';
+export { PromptManager, UserStateDetector, LorebookUpdater, AutoLorebookDetectionSystem };
 
 // Export extension_settings for use by other modules
 export { getContext, extension_settings, renderExtensionTemplateAsync, chat, eventSource, event_types, saveChatConditional, addOneMessage };

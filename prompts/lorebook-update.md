@@ -1,58 +1,80 @@
-# Lorebook Update System Prompt
+# Lorebook Update Prompt
 
-Your task is to generate appropriate lorebook entry content based on detected state changes.
+## Purpose
+This prompt instructs the AI to generate lorebook updates based on detected game state changes in chat messages.
 
-## Update Rules
+## Command Format
+Output commands as plain text, NOT as JSON. Use this format:
 
-### Inventory Entries
-- Format: "Item name. Description and properties."
-- Include keywords for search triggers
-- Update quantity if applicable
-
-### Location Entries  
-- Format: "Location description and current state."
-- Include environmental details
-- Update based on time of day
-
-### Status Effect Entries
-- Format: "Effect name. Description and duration."
-- Include impact on stats/abilities
-- Track expiration if temporary
-
-## Content Generation Guidelines
-1. Be concise but descriptive
-2. Use keywords matching the entry's trigger pattern
-3. Include relevant game mechanics
-4. Maintain consistent tone
-
-## Example Updates
-
-### Inventory Update
-State Change: User gains "flaming sword"
-Lorebook Entry: "Flaming sword. A magical blade imbued with fire element. Deals additional fire damage."
-
-### Location Update
-State Change: User enters "dungeon" at night
-Lorebook Entry: "The dungeon is pitch black, lit only by your torch. Strange sounds echo in the darkness."
-
-### Status Effect Update
-State Change: User receives "poisoned" effect
-Lorebook Entry: "Poisoned. The victim suffers from a toxic substance. Takes 5 damage every turn until cured."
-
-### NPC Update
-State Change: User meets "blacksmith"
-Lorebook Entry: "Blacksmith. A skilled craftsman who makes and repairs weapons and armor. Located in the town center."
-
-## Entry Structure Template
 ```
-[Entry Name]
-[Description with keywords]
-[Current state or condition]
-[Relevant mechanics or effects]
+lorebook-update_category_name|content|keywords
 ```
 
-## Keyword Integration
-- Include trigger words in descriptions
-- Match entry name with common search patterns
-- Use synonyms for better matching
-- Keep descriptions natural but informative
+## Available Categories
+- `inventory` - Items in player inventory
+- `gameState` - Game state information (locations, time, etc.)
+- `quest` - Quest information
+- `npcs` - Non-player characters
+- `items` - Individual item entries
+- `locations` - Places and locations
+- `equipment` - Equipment and gear
+
+## Rules
+1. Only generate updates for NEW or CHANGED information
+2. Content should be descriptive and contextual (2-3 sentences)
+3. Keywords should be comma-separated and relevant for search
+4. Do NOT output JSON arrays or any other format
+5. Output `[none]` if no changes detected
+
+## Examples
+
+### Inventory Item
+```
+lorebook-update_inventory_items_Rusty Sword|A rusty sword found in the dark cave. The blade is chipped but still sharp. It feels heavy in your hand.|rusty sword, sword, weapon, item, inventory, cave find
+```
+
+### Location
+```
+lorebook-update_gameState_locations_Dark Cave|A dark and damp cave entrance. Water drips from the ceiling and the air is cold. The path ahead is unclear.|dark cave, cave, location, entrance, dark, damp, water
+```
+
+### NPC
+```
+lorebook-update_gameState_npcs_Blacksmith|A skilled blacksmith who makes weapons and armor. He has a strong build and calloused hands from years of work. His forge is always hot.|blacksmith, npc, character, smith, weapons, armor, forge
+```
+
+### Equipment
+```
+lorebook-update_equipment_gear_Leather Boots|Worn leather boots that provide basic protection. They're comfortable but show signs of age.|leather boots, boots, footwear, equipment, gear, worn
+```
+
+## Full Prompt Template
+```
+Analyze the recent messages and detect any changes to the game state. Generate lorebook updates for detected changes.
+
+IMPORTANT: Output commands as plain text, NOT as JSON. Use this format:
+lorebook-update_category_name|content|keywords
+
+Available categories: inventory, gameState, quest, npcs, items, locations, equipment
+
+Rules:
+1. Only generate updates for NEW or CHANGED information
+2. Content should be descriptive and contextual
+3. Keywords should be comma-separated and relevant
+4. Do NOT output JSON arrays or any other format
+
+Examples:
+- lorebook-update_inventory_items_Rusty Sword|A rusty sword found in the dark cave. The blade is chipped but still sharp.|rusty sword, sword, weapon, item, inventory
+- lorebook-update_gameState_locations_Dark Cave|A dark and damp cave entrance. Water drips from the ceiling and the air is cold.|dark cave, cave, location, entrance, dark
+- lorebook-update_gameState_npcs_Blacksmith|A skilled blacksmith who makes weapons and armor. He has a strong build and calloused hands.|blacksmith, npc, character, smith, weapons
+
+Current game state will be provided below. Only update entries that have changed or are new.
+
+Output [none] if no changes detected.
+```
+
+## Integration Notes
+- This prompt is used by AutoLorebookDetectionSystem for AI-powered lorebook updates
+- The system injects current game state before the prompt
+- Recent chat messages are appended after the prompt
+- AI output is parsed using regex pattern: `/lorebook-update_(\w+)_([^|]+)\|([^|]+)\|(.+)/g`
