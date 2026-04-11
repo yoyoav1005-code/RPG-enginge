@@ -4,9 +4,7 @@
  * @module AutoLorebookDetectionSystem
  */
 
-import { getContext, extension_settings } from "../../../extensions.js";
-import { LorebookUpdater } from './lorebookUpdater.js';
-import { UserStateDetector } from './userStateDetector.js';
+import { getContext, extension_settings, LorebookUpdater, UserStateDetector } from './RPGEngineExports.js';
 
 export class AutoLorebookDetectionSystem {
     constructor(lorebookUpdater, userStateDetector) {

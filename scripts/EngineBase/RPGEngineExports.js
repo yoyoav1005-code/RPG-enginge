@@ -3,9 +3,9 @@
  * This file serves as a single point of entry for all imports, eliminating path depth issues.
  */
 
-// External dependencies (SillyTavern)
-import { getContext, extension_settings, renderExtensionTemplateAsync } from '../../../../../extensions.js';
-import { chat, eventSource, event_types, saveChatConditional, addOneMessage } from '../../../../../../script.js';
+// External dependencies (SillyTavern) - Re-export for use by other modules
+export { getContext, extension_settings, renderExtensionTemplateAsync } from '../../../../../extensions.js';
+export { chat, eventSource, event_types, saveChatConditional, addOneMessage } from '../../../../../../script.js';
 
 // Import SillyTavern world-info functions directly from world-info.js
 import { 
@@ -61,6 +61,3 @@ import { UserStateDetector } from './userStateDetector.js';
 import { LorebookUpdater } from './lorebookUpdater.js';
 import { AutoLorebookDetectionSystem } from './autoLorebookDetectionSystem.js';
 export { PromptManager, UserStateDetector, LorebookUpdater, AutoLorebookDetectionSystem };
-
-// Export extension_settings for use by other modules
-export { getContext, extension_settings, renderExtensionTemplateAsync, chat, eventSource, event_types, saveChatConditional, addOneMessage };
