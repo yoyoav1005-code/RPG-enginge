@@ -3,12 +3,14 @@
  * @module UserStateDetector
  */
 
-import { PromptManager } from './promptManager.js';
+import { PromptManager } from './RPGEngineExports.js';
+import { debugLog, debugWarn, debugError } from './debug.js';
 
 class UserStateDetector {
     constructor() {
         this.promptManager = new PromptManager();
         this.initialized = false;
+        debugLog('UserStateDetector instance created', 'UserStateDetector');
     }
 
     /**
@@ -16,6 +18,7 @@ class UserStateDetector {
      * @returns {Promise<void>}
      */
     async initialize() {
+        debugLog('Initializing UserStateDetector', 'UserStateDetector');
         await this.promptManager.loadPrompts();
         this.initialized = true;
         debugLog('UserStateDetector initialized', 'UserStateDetector');
@@ -27,8 +30,10 @@ class UserStateDetector {
      * @returns {Promise<Object>} Extracted state information
      */
     async extractStateFromMessage(message) {
+        debugLog(`Extracting state from message (${message.length} chars)`, 'UserStateDetector');
+        
         if (!this.initialized) {
-            debugWarn('UserStateDetector not initialized', 'UserStateDetector');
+            debugWarn('UserStateDetector not initialized, initializing now', 'UserStateDetector');
             await this.initialize();
         }
 
@@ -36,7 +41,7 @@ class UserStateDetector {
         const extractionPrompt = this.promptManager.getStateExtractionPrompt();
 
         if (!prompt || !extractionPrompt) {
-            debugWarn('Prompts not available for state extraction', 'UserStateDetector');
+            debugWarn('Prompts not available for state extraction, using basic extraction', 'UserStateDetector');
             return this.extractStateBasic(message);
         }
 
@@ -58,6 +63,7 @@ class UserStateDetector {
      * @returns {Object} Extracted state
      */
     performStateExtraction(message, prompt) {
+        debugLog(`Performing state extraction on message`, 'UserStateDetector');
         const lowerMessage = message.toLowerCase();
         const extractedState = {
             inventory: { added: [], removed: [] },
@@ -78,6 +84,7 @@ class UserStateDetector {
             const match = lowerMessage.match(pattern.regex);
             if (match) {
                 const itemName = this.extractItemName(match[0]);
+                debugLog(`Found inventory item: ${itemName} (${pattern.action})`, 'UserStateDetector');
                 extractedState.inventory[pattern.action].push({
                     item: itemName,
                     confidence: 0.85
@@ -97,6 +104,7 @@ class UserStateDetector {
             if (match) {
                 const location = this.extractLocationName(match[0]);
                 if (location && !this.isCommonWord(location)) {
+                    debugLog(`Found location: ${location}`, 'UserStateDetector');
                     extractedState.location = { value: location, confidence: 0.8 };
                     break;
                 }
@@ -113,8 +121,10 @@ class UserStateDetector {
         for (const pattern of timePatterns) {
             const match = lowerMessage.match(pattern.regex);
             if (match) {
+                const timeValue = match[1]?.toLowerCase() || match[2]?.toLowerCase();
+                debugLog(`Found time: ${timeValue}`, 'UserStateDetector');
                 extractedState.time = { 
-                    value: match[1]?.toLowerCase() || match[2]?.toLowerCase(), 
+                    value: timeValue, 
                     confidence: 0.75 
                 };
                 break;
@@ -132,6 +142,7 @@ class UserStateDetector {
             if (match) {
                 const npcName = this.extractNpcName(match[0]);
                 if (npcName && !this.isCommonWord(npcName)) {
+                    debugLog(`Found NPC: ${npcName} (${pattern.action})`, 'UserStateDetector');
                     extractedState.npcs[pattern.action].push({
                         name: npcName,
                         confidence: 0.8
@@ -150,6 +161,7 @@ class UserStateDetector {
             const match = lowerMessage.match(pattern.regex);
             if (match) {
                 const effectName = this.extractEffectName(match[0]);
+                debugLog(`Found status effect: ${effectName} (${pattern.action})`, 'UserStateDetector');
                 extractedState.statusEffects[pattern.action].push({
                     effect: effectName,
                     confidence: 0.85
@@ -167,6 +179,7 @@ class UserStateDetector {
             const match = lowerMessage.match(pattern.regex);
             if (match) {
                 const equipmentName = this.extractEquipmentName(match[0]);
+                debugLog(`Found equipment: ${equipmentName} (${pattern.action})`, 'UserStateDetector');
                 extractedState.equipment.changed.push({
                     item: equipmentName,
                     action: pattern.action,
@@ -175,6 +188,7 @@ class UserStateDetector {
             }
         });
 
+        debugLog(`State extraction complete: ${JSON.stringify(extractedState)}`, 'UserStateDetector');
         return extractedState;
     }
 
@@ -184,6 +198,7 @@ class UserStateDetector {
      * @returns {Object} Basic extracted state
      */
     extractStateBasic(message) {
+        debugWarn('Using basic state extraction (fallback)', 'UserStateDetector');
         return {
             inventory: { added: [], removed: [] },
             location: null,
@@ -201,7 +216,6 @@ class UserStateDetector {
      */
     extractItemName(matchedText) {
         const words = matchedText.split(' ');
-        // Remove common verbs and articles
         const filterWords = ['found', 'got', 'received', 'looted', 'the', 'a', 'an'];
         const itemName = words.filter(word => !filterWords.includes(word.toLowerCase()));
         return itemName.join(' ').trim();
@@ -271,6 +285,8 @@ class UserStateDetector {
      * @returns {Promise<Array>} Array of lorebook updates
      */
     async generateLorebookUpdates(changes) {
+        debugLog(`Generating lorebook updates from ${JSON.stringify(changes)}`, 'UserStateDetector');
+        
         if (!this.initialized) {
             debugWarn('UserStateDetector not initialized', 'UserStateDetector');
             await this.initialize();
@@ -286,6 +302,7 @@ class UserStateDetector {
 
         // Generate inventory updates
         if (changes.inventory?.added?.length > 0) {
+            debugLog(`Generating ${changes.inventory.added.length} inventory updates`, 'UserStateDetector');
             changes.inventory.added.forEach(item => {
                 updates.push({
                     category: 'inventory',
@@ -299,6 +316,7 @@ class UserStateDetector {
 
         // Generate location updates
         if (changes.location) {
+            debugLog(`Generating location update: ${changes.location.value}`, 'UserStateDetector');
             updates.push({
                 category: 'gameState',
                 subcategory: 'locations',
@@ -310,6 +328,7 @@ class UserStateDetector {
 
         // Generate NPC updates
         if (changes.npcs?.added?.length > 0) {
+            debugLog(`Generating ${changes.npcs.added.length} NPC updates`, 'UserStateDetector');
             changes.npcs.added.forEach(npc => {
                 updates.push({
                     category: 'gameState',
@@ -331,6 +350,7 @@ class UserStateDetector {
      * @returns {Array} Array of basic lorebook updates
      */
     generateBasicLorebookUpdates(changes) {
+        debugWarn('Using basic lorebook update generation', 'UserStateDetector');
         return [];
     }
 
@@ -340,6 +360,8 @@ class UserStateDetector {
      * @returns {Promise<Array>} Array of detected states
      */
     async detectStates(messageText) {
+        debugLog(`Detecting states from ${messageText.length} character message`, 'UserStateDetector');
+        
         if (!this.initialized) {
             debugWarn('UserStateDetector not initialized', 'UserStateDetector');
             await this.initialize();
@@ -352,6 +374,7 @@ class UserStateDetector {
 
         // Convert extracted state to state change objects
         if (extractedState.location) {
+            debugLog(`Detected location state: ${extractedState.location.value}`, 'UserStateDetector');
             states.push({
                 type: 'location',
                 value: extractedState.location.value,
@@ -360,6 +383,7 @@ class UserStateDetector {
         }
 
         if (extractedState.time) {
+            debugLog(`Detected time state: ${extractedState.time.value}`, 'UserStateDetector');
             states.push({
                 type: 'time',
                 value: extractedState.time.value,
@@ -368,6 +392,7 @@ class UserStateDetector {
         }
 
         if (extractedState.inventory.added.length > 0) {
+            debugLog(`Detected ${extractedState.inventory.added.length} added items`, 'UserStateDetector');
             extractedState.inventory.added.forEach(item => {
                 states.push({
                     type: 'item',
@@ -379,6 +404,7 @@ class UserStateDetector {
         }
 
         if (extractedState.inventory.removed.length > 0) {
+            debugLog(`Detected ${extractedState.inventory.removed.length} removed items`, 'UserStateDetector');
             extractedState.inventory.removed.forEach(item => {
                 states.push({
                     type: 'item',
@@ -390,6 +416,7 @@ class UserStateDetector {
         }
 
         if (extractedState.npcs.added.length > 0) {
+            debugLog(`Detected ${extractedState.npcs.added.length} added NPCs`, 'UserStateDetector');
             extractedState.npcs.added.forEach(npc => {
                 states.push({
                     type: 'npc',
@@ -401,6 +428,7 @@ class UserStateDetector {
         }
 
         if (extractedState.npcs.removed.length > 0) {
+            debugLog(`Detected ${extractedState.npcs.removed.length} removed NPCs`, 'UserStateDetector');
             extractedState.npcs.removed.forEach(npc => {
                 states.push({
                     type: 'npc',
@@ -412,6 +440,7 @@ class UserStateDetector {
         }
 
         if (extractedState.statusEffects.added.length > 0) {
+            debugLog(`Detected ${extractedState.statusEffects.added.length} status effects`, 'UserStateDetector');
             extractedState.statusEffects.added.forEach(effect => {
                 states.push({
                     type: 'gamestate',
@@ -430,6 +459,7 @@ class UserStateDetector {
      * @returns {boolean}
      */
     isInitialized() {
+        debugLog(`Initialization status: ${this.initialized}`, 'UserStateDetector');
         return this.initialized;
     }
 }

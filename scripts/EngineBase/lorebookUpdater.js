@@ -1,13 +1,17 @@
 /**
- * LorebookUpdater - Applies state changes to lorebooks using WorldInfoCache API
+ * LorebookUpdater - Applies detected state changes to lorebooks using WorldInfoCache API
  * @module LorebookUpdater
  */
 
-import { worldInfoCache } from './RPGEngineExports.js';
+import { debugLog, debugWarn, debugError } from './debug.js';
+import { extension_settings, getContext } from './RPGEngineExports.js';
 
 class LorebookUpdater {
     constructor() {
         this.initialized = false;
+        this.cache = null;
+        this.wi = null;
+        debugLog('LorebookUpdater instance created', 'LorebookUpdater');
     }
 
     /**
@@ -15,260 +19,275 @@ class LorebookUpdater {
      * @returns {Promise<void>}
      */
     async initialize() {
-        if (!worldInfoCache) {
-            debugWarn('WorldInfoCache not available', 'LorebookUpdater');
+        debugLog('Initializing LorebookUpdater', 'LorebookUpdater');
+        try {
+            const { WorldInfoCache, WorldInfo } = getContext();
+            this.cache = new WorldInfoCache();
+            this.wi = new WorldInfo();
+            this.initialized = true;
+            debugLog('LorebookUpdater initialized successfully', 'LorebookUpdater');
+        } catch (error) {
+            debugError('Failed to initialize LorebookUpdater:', error, 'LorebookUpdater');
+            throw error;
         }
-        this.initialized = true;
-        debugLog('LorebookUpdater initialized', 'LorebookUpdater');
     }
 
     /**
-     * Apply batch of lorebook updates
-     * @param {Array} updates - Array of lorebook updates to apply
-     * @returns {Promise<Object>} Results of the updates
+     * Apply state changes as lorebook updates
+     * @param {Array} stateChanges - Array of state change objects
+     * @returns {Promise<Object>} Result of the update operation
      */
-    async applyLorebookUpdates(updates) {
+    async applyLorebookUpdates(stateChanges) {
+        debugLog(`Applying ${stateChanges.length} lorebook updates`, 'LorebookUpdater');
+        
         if (!this.initialized) {
-            debugWarn('LorebookUpdater not initialized', 'LorebookUpdater');
+            debugWarn('LorebookUpdater not initialized, initializing now', 'LorebookUpdater');
             await this.initialize();
         }
 
-        if (!updates || updates.length === 0) {
-            debugLog('No updates to apply', 'LorebookUpdater');
-            return { success: true, applied: 0, failed: 0 };
+        if (!stateChanges || stateChanges.length === 0) {
+            debugLog('No state changes to apply', 'LorebookUpdater');
+            return { applied: 0, failed: 0 };
         }
 
-        debugLog(`Applying ${updates.length} lorebook updates`, 'LorebookUpdater');
+        let applied = 0;
+        let failed = 0;
 
+        for (const change of stateChanges) {
+            try {
+                await this.applySingleUpdate(change);
+                applied++;
+                debugLog(`Applied update: ${change.category}/${change.subcategory}/${change.name}`, 'LorebookUpdater');
+            } catch (error) {
+                debugError(`Failed to apply update: ${error}`, 'LorebookUpdater');
+                failed++;
+            }
+        }
+
+        debugLog(`Lorebook update complete: ${applied} applied, ${failed} failed`, 'LorebookUpdater');
+        return { applied, failed };
+    }
+
+    /**
+     * Apply a single lorebook update
+     * @param {Object} update - The update object
+     * @returns {Promise<void>}
+     */
+    async applySingleUpdate(update) {
+        debugLog(`Applying single update: ${update.category}/${update.subcategory}/${update.name}`, 'LorebookUpdater');
+        
+        const { category, subcategory, name, content, keywords } = update;
+
+        // Validate required fields
+        if (!category || !name || !content) {
+            debugError('Invalid update object - missing required fields', 'LorebookUpdater');
+            throw new Error('Update object missing required fields');
+        }
+
+        // Create entry structure
+        const entry = {
+            keywords: keywords || [],
+            content: content,
+            probability: 1.0,
+            trigger_above: 0,
+            trigger_below: 100,
+            group: false,
+            group_alias: ''
+        };
+
+        // Generate entry path
+        const entryPath = this.generateEntryPath(category, subcategory, name);
+        debugLog(`Entry path: ${entryPath}`, 'LorebookUpdater');
+
+        // Apply to lorebook cache
+        await this.cache.apply(update.category, update.subcategory, name, entry);
+        debugLog(`Applied update to cache: ${entryPath}`, 'LorebookUpdater');
+    }
+
+    /**
+     * Generate entry path from category, subcategory, and name
+     * @param {string} category - The category
+     * @param {string} subcategory - The subcategory
+     * @param {string} name - The name
+     * @returns {string} Entry path
+     */
+    generateEntryPath(category, subcategory, name) {
+        const safeName = name.replace(/[^a-z0-9-]/gi, '-');
+        return `${category}/${subcategory}/${safeName}`;
+    }
+
+    /**
+     * Update location entry
+     * @param {string} location - The location name
+     * @param {string} content - The location description
+     * @returns {Promise<void>}
+     */
+    async updateLocation(location, content) {
+        debugLog(`Updating location: ${location}`, 'LorebookUpdater');
+        
+        const update = {
+            category: 'gameState',
+            subcategory: 'locations',
+            name: location,
+            content: content,
+            keywords: [location.toLowerCase(), 'location', 'place']
+        };
+
+        await this.applySingleUpdate(update);
+        debugLog(`Location updated: ${location}`, 'LorebookUpdater');
+    }
+
+    /**
+     * Update inventory entry
+     * @param {string} itemName - The item name
+     * @param {string} content - The item description
+     * @returns {Promise<void>}
+     */
+    async updateInventoryItem(itemName, content) {
+        debugLog(`Updating inventory item: ${itemName}`, 'LorebookUpdater');
+        
+        const update = {
+            category: 'inventory',
+            subcategory: 'items',
+            name: itemName,
+            content: content,
+            keywords: [itemName.toLowerCase(), 'item', 'inventory']
+        };
+
+        await this.applySingleUpdate(update);
+        debugLog(`Inventory item updated: ${itemName}`, 'LorebookUpdater');
+    }
+
+    /**
+     * Update NPC entry
+     * @param {string} npcName - The NPC name
+     * @param {string} content - The NPC description
+     * @returns {Promise<void>}
+     */
+    async updateNpc(npcName, content) {
+        debugLog(`Updating NPC: ${npcName}`, 'LorebookUpdater');
+        
+        const update = {
+            category: 'gameState',
+            subcategory: 'npcs',
+            name: npcName,
+            content: content,
+            keywords: [npcName.toLowerCase(), 'npc', 'character']
+        };
+
+        await this.applySingleUpdate(update);
+        debugLog(`NPC updated: ${npcName}`, 'LorebookUpdater');
+    }
+
+    /**
+     * Update time entry
+     * @param {string} time - The time description
+     * @param {string} content - The time-related content
+     * @returns {Promise<void>}
+     */
+    async updateTime(time, content) {
+        debugLog(`Updating time: ${time}`, 'LorebookUpdater');
+        
+        const update = {
+            category: 'gameState',
+            subcategory: 'time',
+            name: time,
+            content: content,
+            keywords: [time.toLowerCase(), 'time', 'hour']
+        };
+
+        await this.applySingleUpdate(update);
+        debugLog(`Time updated: ${time}`, 'LorebookUpdater');
+    }
+
+    /**
+     * Remove entry from lorebook
+     * @param {string} category - The category
+     * @param {string} subcategory - The subcategory
+     * @param {string} name - The name
+     * @returns {Promise<void>}
+     */
+    async removeEntry(category, subcategory, name) {
+        debugLog(`Removing entry: ${category}/${subcategory}/${name}`, 'LorebookUpdater');
+        
+        await this.cache.apply(category, subcategory, name, null);
+        debugLog(`Entry removed: ${category}/${subcategory}/${name}`, 'LorebookUpdater');
+    }
+
+    /**
+     * Batch update multiple entries
+     * @param {Array} updates - Array of update objects
+     * @returns {Promise<Object>} Result object
+     */
+    async batchUpdate(updates) {
+        debugLog(`Batch updating ${updates.length} entries`, 'LorebookUpdater');
+        
         const results = {
-            success: true,
-            applied: 0,
-            failed: 0,
-            details: []
+            successful: [],
+            failed: []
         };
 
         for (const update of updates) {
             try {
                 await this.applySingleUpdate(update);
-                results.applied++;
-                debugLog(`Applied update: ${update.category}/${update.subcategory}/${update.name}`, 'LorebookUpdater');
+                results.successful.push(update.name);
+                debugLog(`Batch update successful: ${update.name}`, 'LorebookUpdater');
             } catch (error) {
-                results.failed++;
-                results.details.push({
-                    update: update.name,
-                    error: error.message
-                });
-                debugWarn(`Failed to apply update: ${update.name}`, error, 'LorebookUpdater');
+                debugError(`Batch update failed: ${error}`, 'LorebookUpdater');
+                results.failed.push({ name: update.name, error: error.message });
             }
         }
 
-        debugLog(`Applied ${results.applied}/${updates.length} lorebook updates`, 'LorebookUpdater');
+        debugLog(`Batch update complete: ${results.successful.length} successful, ${results.failed.length} failed`, 'LorebookUpdater');
         return results;
     }
 
     /**
-     * Apply a single lorebook update
-     * @param {Object} update - The update to apply
-     * @returns {Promise<void>}
+     * Get current lorebook state for a category
+     * @param {string} category - The category
+     * @returns {Promise<Object>} Current state
      */
-    async applySingleUpdate(update) {
-        const { category, subcategory, name, content, keywords } = update;
-
-        // Construct the lorebook path
-        const lorebookPath = `${category}/${subcategory}`;
-        const entryPath = `${lorebookPath}/${name}`;
-
-        debugLog(`Updating lorebook: ${entryPath}`, 'LorebookUpdater');
-
-        // Get or create the lorebook
-        let lorebook = this.getLorebook(lorebookPath);
+    async getLorebookState(category) {
+        debugLog(`Getting lorebook state for category: ${category}`, 'LorebookUpdater');
         
-        if (!lorebook) {
-            debugWarn(`Lorebook not found: ${lorebookPath}`, 'LorebookUpdater');
-            // Try to create it
-            lorebook = await this.createLorebook(lorebookPath);
-        }
-
-        // Update or create the entry
-        const entryId = this.findEntryId(lorebook, name);
-        
-        if (entryId) {
-            // Update existing entry
-            await this.updateEntry(lorebook, entryId, content, keywords);
-        } else {
-            // Create new entry
-            await this.createEntry(lorebook, name, content, keywords);
-        }
-    }
-
-    /**
-     * Get a lorebook by path
-     * @param {string} path - The lorebook path
-     * @returns {Object|null} The lorebook or null if not found
-     */
-    getLorebook(path) {
-        if (!worldInfoCache) return null;
-        
-        try {
-            const lorebooks = worldInfoCache.getLorebooks();
-            const pathParts = path.split('/');
-            
-            // Navigate through the path
-            let current = lorebooks;
-            for (const part of pathParts) {
-                if (!current[part]) return null;
-                current = current[part];
-            }
-            
-            return current;
-        } catch (error) {
-            debugWarn(`Error getting lorebook ${path}:`, error, 'LorebookUpdater');
-            return null;
-        }
-    }
-
-    /**
-     * Create a new lorebook if it doesn't exist
-     * @param {string} path - The lorebook path
-     * @returns {Promise<Object|null>} The created lorebook or null
-     */
-    async createLorebook(path) {
-        if (!worldInfoCache) return null;
-
-        try {
-            debugLog(`Creating lorebook: ${path}`, 'LorebookUpdater');
-            
-            // Use SillyTavern's API to create a new lorebook
-            const lorebookId = await chrome.runtime.sendMessage({
-                action: 'newWorldInfo',
-                args: [{
-                    name: path.split('/').pop(),
-                    folder: path.split('/').slice(0, -1).join('/') || 'root'
-                }]
-            });
-
-            if (lorebookId) {
-                debugLog(`Created lorebook: ${path} (ID: ${lorebookId})`, 'LorebookUpdater');
-                return this.getLorebook(path);
-            }
-            
-            return null;
-        } catch (error) {
-            debugWarn(`Failed to create lorebook ${path}:`, error, 'LorebookUpdater');
-            return null;
-        }
-    }
-
-    /**
-     * Find an entry by name in a lorebook
-     * @param {Object} lorebook - The lorebook to search
-     * @param {string} name - The entry name to find
-     * @returns {string|null} The entry ID or null if not found
-     */
-    findEntryId(lorebook, name) {
-        if (!lorebook || !lorebook.entries) return null;
-
-        const entries = lorebook.entries;
-        for (const entryId of Object.keys(entries)) {
-            const entry = entries[entryId];
-            if (entry && entry.name && entry.name.toLowerCase() === name.toLowerCase()) {
-                return entryId;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Update an existing entry
-     * @param {Object} lorebook - The lorebook containing the entry
-     * @param {string} entryId - The entry ID to update
-     * @param {string} content - The new content
-     * @param {Array} keywords - The keywords for the entry
-     * @returns {Promise<void>}
-     */
-    async updateEntry(lorebook, entryId, content, keywords) {
-        if (!worldInfoCache) return;
-
-        try {
-            debugLog(`Updating entry ${entryId} in ${lorebook.name}`, 'LorebookUpdater');
-
-            // Prepare the entry data
-            const entryData = {
-                content: content,
-                keywords: keywords.join(', '),
-                enabled: true
-            };
-
-            // Use WorldInfoCache to update the entry
-            await worldInfoCache.updateEntry(lorebook.id, entryId, entryData);
-            
-            debugLog(`Updated entry ${entryId}`, 'LorebookUpdater');
-        } catch (error) {
-            debugWarn(`Failed to update entry ${entryId}:`, error, 'LorebookUpdater');
-            throw error;
-        }
-    }
-
-    /**
-     * Create a new entry in a lorebook
-     * @param {Object} lorebook - The lorebook to add the entry to
-     * @param {string} name - The entry name
-     * @param {string} content - The entry content
-     * @param {Array} keywords - The keywords for the entry
-     * @returns {Promise<void>}
-     */
-    async createEntry(lorebook, name, content, keywords) {
-        if (!worldInfoCache) return;
-
-        try {
-            debugLog(`Creating entry ${name} in ${lorebook.name}`, 'LorebookUpdater');
-
-            // Use WorldInfoCache to create a new entry
-            const entryId = await worldInfoCache.createEntry(lorebook.id, {
-                name: name,
-                content: content,
-                keywords: keywords.join(', '),
-                enabled: true
-            });
-
-            if (entryId) {
-                debugLog(`Created entry ${name} (ID: ${entryId})`, 'LorebookUpdater');
-            }
-        } catch (error) {
-            debugWarn(`Failed to create entry ${name}:`, error, 'LorebookUpdater');
-            throw error;
-        }
-    }
-
-    /**
-     * Update multiple lorebooks in batch
-     * @param {Array} batchUpdates - Array of batch update objects
-     * @returns {Promise<Object>} Results of the batch updates
-     */
-    async batchUpdateLorebooks(batchUpdates) {
         if (!this.initialized) {
+            debugWarn('LorebookUpdater not initialized', 'LorebookUpdater');
             await this.initialize();
         }
 
-        const allResults = {
-            success: true,
-            totalApplied: 0,
-            totalFailed: 0,
-            batches: []
-        };
+        try {
+            const state = this.cache.get(category);
+            debugLog(`Retrieved state for category: ${category}`, 'LorebookUpdater');
+            return state;
+        } catch (error) {
+            debugError(`Failed to get state for category ${category}:`, error, 'LorebookUpdater');
+            return null;
+        }
+    }
 
-        for (const batch of batchUpdates) {
-            const result = await this.applyLorebookUpdates(batch.updates);
-            allResults.totalApplied += result.applied;
-            allResults.totalFailed += result.failed;
-            allResults.batches.push({
-                category: batch.category,
-                result: result
-            });
+    /**
+     * Validate update object
+     * @param {Object} update - The update object to validate
+     * @returns {boolean} True if valid
+     */
+    validateUpdate(update) {
+        debugLog('Validating update object', 'LorebookUpdater');
+        
+        if (!update || typeof update !== 'object') {
+            debugError('Invalid update object', 'LorebookUpdater');
+            return false;
         }
 
-        debugLog(`Batch update complete: ${allResults.totalApplied}/${allResults.totalApplied + allResults.totalFailed} applied`, 'LorebookUpdater');
-        return allResults;
+        const required = ['category', 'subcategory', 'name', 'content'];
+        const missing = required.filter(field => !update[field]);
+        
+        if (missing.length > 0) {
+            debugError(`Missing required fields: ${missing.join(', ')}`, 'LorebookUpdater');
+            return false;
+        }
+
+        debugLog('Update object is valid', 'LorebookUpdater');
+        return true;
     }
 
     /**
@@ -276,6 +295,7 @@ class LorebookUpdater {
      * @returns {boolean}
      */
     isInitialized() {
+        debugLog(`Initialization status: ${this.initialized}`, 'LorebookUpdater');
         return this.initialized;
     }
 }

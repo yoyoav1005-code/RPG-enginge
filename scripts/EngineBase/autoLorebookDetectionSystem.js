@@ -5,6 +5,7 @@
  */
 
 import { getContext, extension_settings, LorebookUpdater, UserStateDetector } from './RPGEngineExports.js';
+import { debugLog, debugWarn, debugError } from './debug.js';
 
 export class AutoLorebookDetectionSystem {
     constructor(lorebookUpdater, userStateDetector) {
@@ -21,6 +22,7 @@ export class AutoLorebookDetectionSystem {
         this.retryDelay = 2000;
         this.currentRetryCount = 0;
         this.appInitialized = false;
+        debugLog('AutoLorebookDetectionSystem instance created', 'AutoLorebookDetectionSystem');
     }
 
     getDefaultPrompt() {
@@ -50,35 +52,41 @@ Output [none] if no changes detected.`;
     enable() {
         if (this.isEnabled) return '[RPG Engine] Auto lorebook updates already enabled.';
         
+        debugLog('Enabling auto lorebook detection', 'AutoLorebookDetectionSystem');
         this.isEnabled = true;
         this.consecutiveFailures = 0;
         this.currentRetryCount = 0;
         this.setupEventListeners();
+        debugLog('Auto lorebook detection enabled', 'AutoLorebookDetectionSystem');
         return '[RPG Engine] Auto lorebook updates enabled.';
     }
 
     disable() {
+        debugLog('Disabling auto lorebook detection', 'AutoLorebookDetectionSystem');
         if (!this.isEnabled) return '[RPG Engine] Auto lorebook updates already disabled.';
         
         this.isEnabled = false;
         this.removeEventListeners();
+        debugLog('Auto lorebook detection disabled', 'AutoLorebookDetectionSystem');
         return '[RPG Engine] Auto lorebook updates disabled.';
     }
 
     setupEventListeners() {
+        debugLog('Setting up event listeners', 'AutoLorebookDetectionSystem');
         this.removeEventListeners();
         
         const { eventSource, event_types } = getContext();
         
         // Listen for MESSAGE_RECEIVED event (fires when new messages arrive)
         this.eventHandler = (data) => {
+            debugLog('Event handler triggered', 'AutoLorebookDetectionSystem');
             // Only process AI messages and only after app is initialized
             if (this.isEnabled && !this.isProcessing && this.appInitialized && 
                 data && !data.is_user) {
-                console.log('[AutoLorebookDetectionSystem] New AI message received, processing...');
+                debugLog('New AI message received, processing...', 'AutoLorebookDetectionSystem');
                 setTimeout(() => {
                     this.processLorebookCommands().catch(error => {
-                        console.error('Auto lorebook processing failed:', error);
+                        debugError('Auto lorebook processing failed:', error, 'AutoLorebookDetectionSystem');
                         this.consecutiveFailures++;
                     });
                 }, 1000);
@@ -86,34 +94,39 @@ Output [none] if no changes detected.`;
         };
         
         eventSource.on(event_types.MESSAGE_RECEIVED, this.eventHandler);
-        console.log('[AutoLorebookDetectionSystem] Event listener registered for MESSAGE_RECEIVED');
+        debugLog('Event listener registered for MESSAGE_RECEIVED', 'AutoLorebookDetectionSystem');
     }
 
     removeEventListeners() {
+        debugLog('Removing event listeners', 'AutoLorebookDetectionSystem');
         if (this.eventHandler) {
             const { eventSource, event_types } = getContext();
             eventSource.off(event_types.MESSAGE_RECEIVED, this.eventHandler);
             this.eventHandler = null;
-            console.log('[AutoLorebookDetectionSystem] Event listener removed');
+            debugLog('Event listener removed', 'AutoLorebookDetectionSystem');
         }
     }
 
     markAppInitialized() {
+        debugLog('Marking app as initialized', 'AutoLorebookDetectionSystem');
         if (!this.appInitialized) {
             this.appInitialized = true;
-            console.log('[AutoLorebookDetectionSystem] App marked as initialized - will now process new AI messages');
+            debugLog('App marked as initialized - will now process new AI messages', 'AutoLorebookDetectionSystem');
         }
     }
 
     async processLorebookCommands() {
+        debugLog('Starting to process lorebook commands', 'AutoLorebookDetectionSystem');
+        
         if (this.consecutiveFailures >= this.maxConsecutiveFailures) {
+            debugWarn('Max consecutive failures reached, disabling', 'AutoLorebookDetectionSystem');
             this.disable();
             this.showPopup('Auto lorebook updates disabled due to repeated failures.', 'error');
             return;
         }
 
         if (this.isProcessing) {
-            console.log('[AutoLorebookDetectionSystem] Already processing, skipping');
+            debugLog('Already processing, skipping', 'AutoLorebookDetectionSystem');
             return;
         }
         
@@ -121,34 +134,40 @@ Output [none] if no changes detected.`;
         this.currentRetryCount = 0;
         
         try {
+            debugLog('Starting process with retry', 'AutoLorebookDetectionSystem');
             await this.processWithRetry();
         } catch (error) {
-            console.error('Lorebook command processing failed after retries:', error);
+            debugError('Lorebook command processing failed after retries:', error, 'AutoLorebookDetectionSystem');
             this.consecutiveFailures++;
             this.showPopup(`Lorebook check failed ${this.consecutiveFailures} time(s).`, 'error');
         } finally {
+            debugLog('Finished processing lorebook commands', 'AutoLorebookDetectionSystem');
             this.isProcessing = false;
         }
     }
 
     async processWithRetry() {
+        debugLog('Starting retry process', 'AutoLorebookDetectionSystem');
         while (this.currentRetryCount < this.maxRetries) {
             try {
+                debugLog(`Checking for lorebook updates... (Attempt ${this.currentRetryCount + 1}/${this.maxRetries})`, 'AutoLorebookDetectionSystem');
                 this.showPopup(`Checking for lorebook updates... (Attempt ${this.currentRetryCount + 1}/${this.maxRetries})`, 'info');
                 
                 await this.executeGenCommand();
                 
+                debugLog('Lorebook check completed successfully', 'AutoLorebookDetectionSystem');
                 this.consecutiveFailures = 0;
                 this.showPopup('Lorebook check completed.', 'success');
                 return;
                 
             } catch (error) {
+                debugWarn(`Attempt ${this.currentRetryCount + 1} failed, retrying in ${this.retryDelay}ms...`, error, 'AutoLorebookDetectionSystem');
                 this.currentRetryCount++;
                 
                 if (this.currentRetryCount < this.maxRetries) {
-                    console.log(`[AutoLorebookDetectionSystem] Attempt ${this.currentRetryCount} failed, retrying in ${this.retryDelay}ms...`, error);
                     await this.delay(this.retryDelay);
                 } else {
+                    debugError('All retry attempts failed', error, 'AutoLorebookDetectionSystem');
                     throw error;
                 }
             }
@@ -156,7 +175,7 @@ Output [none] if no changes detected.`;
     }
 
     getLorebookStateString() {
-        // Build current lorebook state for AI context
+        debugLog('Building lorebook state string', 'AutoLorebookDetectionSystem');
         let output = `Current Lorebook Entries:\n\n`;
         
         // Get current extension settings state
@@ -182,12 +201,15 @@ Output [none] if no changes detected.`;
             output += `Active NPCs: ${settings.npcs.join(', ')}\n`;
         }
         
+        debugLog(`Lorebook state string built (${output.length} chars)`, 'AutoLorebookDetectionSystem');
         return output;
     }
 
     async executeGenCommand() {
+        debugLog('Executing generation command', 'AutoLorebookDetectionSystem');
         const recentMessages = this.getLastMessages(3);
         if (!recentMessages.trim()) {
+            debugWarn('No valid messages to process', 'AutoLorebookDetectionSystem');
             throw new Error('No valid messages to process');
         }
 
@@ -198,7 +220,7 @@ Output [none] if no changes detected.`;
         
         const promptText = `${this.systemPrompt}\n\n${currentLorebookState}\n\nRecent Messages:\n${recentMessages}\n\nOutput:`;
         
-        console.log('[AutoLorebookDetectionSystem] Generating lorebook commands with generateRaw...');
+        debugLog('Generating lorebook commands with generateRaw...', 'AutoLorebookDetectionSystem');
         
         try {
             const result = await generateRaw({
@@ -207,37 +229,40 @@ Output [none] if no changes detected.`;
             });
 
             if (!result) {
+                debugError('No output generated from generation', null, 'AutoLorebookDetectionSystem');
                 throw new Error('No output generated from generation');
             }
             
-            console.log('[AutoLorebookDetectionSystem] Generated result:', result);
+            debugLog(`Generated result: ${result}`, 'AutoLorebookDetectionSystem');
             
             // Check if AI output [none]
             if (result.trim().toLowerCase() === '[none]') {
-                console.log('[AutoLorebookDetectionSystem] No changes detected by AI');
+                debugLog('No changes detected by AI', 'AutoLorebookDetectionSystem');
                 return;
             }
             
             const commands = this.parseGeneratedText(result);
             
             if (commands.length > 0) {
-                console.log(`[AutoLorebookDetectionSystem] Found ${commands.length} commands, processing...`);
+                debugLog(`Found ${commands.length} commands, processing...`, 'AutoLorebookDetectionSystem');
                 await this.processCommandBatch(commands);
             } else {
-                console.log('[AutoLorebookDetectionSystem] No lorebook commands found in response');
+                debugLog('No lorebook commands found in response', 'AutoLorebookDetectionSystem');
             }
             
         } catch (error) {
-            console.error('[AutoLorebookDetectionSystem] Generation failed:', error);
+            debugError('Generation failed:', error, 'AutoLorebookDetectionSystem');
             await this.tryFallbackGeneration(promptText);
         }
     }
 
     async tryFallbackGeneration(promptText) {
+        debugLog('Attempting fallback generation', 'AutoLorebookDetectionSystem');
         try {
             const { generateQuietPrompt } = getContext();
             
             if (!generateQuietPrompt) {
+                debugError('generateQuietPrompt not available', null, 'AutoLorebookDetectionSystem');
                 throw new Error('generateQuietPrompt not available');
             }
             
@@ -246,24 +271,27 @@ Output [none] if no changes detected.`;
             });
 
             if (!result) {
+                debugError('No output generated from fallback generation', null, 'AutoLorebookDetectionSystem');
                 throw new Error('No output generated from fallback generation');
             }
             
-            console.log('[AutoLorebookDetectionSystem] Fallback result:', result);
+            debugLog(`Fallback result: ${result}`, 'AutoLorebookDetectionSystem');
             
             const commands = this.parseGeneratedText(result);
             
             if (commands.length > 0) {
+                debugLog('Processing fallback commands', 'AutoLorebookDetectionSystem');
                 await this.processCommandBatch(commands);
             }
             
         } catch (fallbackError) {
-            console.error('[AutoLorebookDetectionSystem] Fallback generation also failed:', fallbackError);
+            debugError('Fallback generation also failed:', fallbackError, 'AutoLorebookDetectionSystem');
             throw new Error(`Both generation methods failed: ${fallbackError.message}`);
         }
     }
 
     parseGeneratedText(text) {
+        debugLog(`Parsing generated text (${text?.length || 0} chars)`, 'AutoLorebookDetectionSystem');
         if (!text) return [];
         
         const commands = [];
@@ -273,17 +301,18 @@ Output [none] if no changes detected.`;
             commands.push(match[0]);
         }
         
-        console.log(`[AutoLorebookDetectionSystem] Found ${commands.length} commands:`, commands);
+        debugLog(`Found ${commands.length} commands:`, commands, 'AutoLorebookDetectionSystem');
         return commands;
     }
 
     async processCommandBatch(commands) {
+        debugLog(`Processing command batch (${commands?.length || 0} commands)`, 'AutoLorebookDetectionSystem');
         if (!commands || commands.length === 0) {
-            console.log('[AutoLorebookDetectionSystem] No commands to process');
+            debugLog('No commands to process', 'AutoLorebookDetectionSystem');
             return;
         }
 
-        console.log(`[AutoLorebookDetectionSystem] Processing batch of ${commands.length} commands`);
+        debugLog(`Processing batch of ${commands.length} commands`, 'AutoLorebookDetectionSystem');
         
         const successfulCommands = [];
         const failedCommands = [];
@@ -297,8 +326,8 @@ Output [none] if no changes detected.`;
                     failedCommands.push({ command, error: result.error });
                 }
             } catch (error) {
+                debugError(`Error processing command "${command}":`, error, 'AutoLorebookDetectionSystem');
                 failedCommands.push({ command, error: error.message });
-                console.error(`Error processing command "${command}":`, error);
             }
         }
         
@@ -307,16 +336,18 @@ Output [none] if no changes detected.`;
         }
         
         if (failedCommands.length > 0) {
-            console.warn(`[AutoLorebookDetectionSystem] ${failedCommands.length} commands failed:`, failedCommands);
+            debugWarn(`${failedCommands.length} commands failed:`, failedCommands, 'AutoLorebookDetectionSystem');
         }
         
-        console.log(`[AutoLorebookDetectionSystem] Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed`);
+        debugLog(`Batch completed: ${successfulCommands.length} successful, ${failedCommands.length} failed`, 'AutoLorebookDetectionSystem');
     }
 
     async processSingleCommand(command) {
+        debugLog(`Processing single command: ${command}`, 'AutoLorebookDetectionSystem');
         try {
             const match = command.match(/lorebook-update_(\w+)_([^|]+)\|([^|]+)\|(.+)/);
             if (!match) {
+                debugError(`Invalid command format: ${command}`, null, 'AutoLorebookDetectionSystem');
                 throw new Error(`Invalid command format: ${command}`);
             }
             
@@ -328,7 +359,7 @@ Output [none] if no changes detected.`;
             // Create subcategory based on category
             const subcategory = this.getSubcategory(category);
             
-            console.log(`[AutoLorebookDetectionSystem] Processing: ${category}/${subcategory}/${name}`);
+            debugLog(`Processing: ${category}/${subcategory}/${name}`, 'AutoLorebookDetectionSystem');
             
             // Create lorebook update object
             const update = {
@@ -340,6 +371,7 @@ Output [none] if no changes detected.`;
             };
             
             // Apply via LorebookUpdater
+            debugLog('Applying via LorebookUpdater', 'AutoLorebookDetectionSystem');
             const result = await this.lorebookUpdater.applyLorebookUpdates([update]);
             
             return {
@@ -349,6 +381,7 @@ Output [none] if no changes detected.`;
             };
             
         } catch (error) {
+            debugError(`Failed to process command: ${error}`, null, 'AutoLorebookDetectionSystem');
             return {
                 success: false,
                 command,
@@ -358,6 +391,7 @@ Output [none] if no changes detected.`;
     }
 
     getSubcategory(category) {
+        debugLog(`Getting subcategory for ${category}`, 'AutoLorebookDetectionSystem');
         // Map categories to subcategories
         const mapping = {
             'inventory': 'items',
@@ -369,15 +403,18 @@ Output [none] if no changes detected.`;
             'equipment': 'gear'
         };
         
-        return mapping[category] || 'entries';
+        const result = mapping[category] || 'entries';
+        debugLog(`Subcategory for ${category} is ${result}`, 'AutoLorebookDetectionSystem');
+        return result;
     }
 
     getLastMessages(count = 3) {
+        debugLog(`Getting last ${count} messages`, 'AutoLorebookDetectionSystem');
         try {
             const { chat } = getContext();
             
             if (!chat || !Array.isArray(chat) || chat.length === 0) {
-                console.log('[AutoLorebookDetectionSystem] No chat or empty chat array');
+                debugWarn('No chat or empty chat array', null, 'AutoLorebookDetectionSystem');
                 return '';
             }
             
@@ -388,22 +425,26 @@ Output [none] if no changes detected.`;
             );
             
             if (validMessages.length === 0) {
-                console.log('[AutoLorebookDetectionSystem] No valid messages found');
+                debugWarn('No valid messages found', null, 'AutoLorebookDetectionSystem');
                 return '';
             }
             
             const recentMessages = validMessages.slice(-count);
-            return recentMessages.map(msg => 
+            const result = recentMessages.map(msg => 
                 `${msg.is_user ? 'User' : (msg.name || 'AI')}: ${msg.mes}`
             ).join('\n');
             
+            debugLog(`Retrieved ${recentMessages.length} messages`, 'AutoLorebookDetectionSystem');
+            return result;
+            
         } catch (error) {
-            console.error('Error getting last messages:', error);
+            debugError('Error getting last messages:', error, 'AutoLorebookDetectionSystem');
             return '';
         }
     }
 
     showPopup(message, type = 'info') {
+        debugLog(`Showing popup: ${message}`, 'AutoLorebookDetectionSystem');
         try {
             if (typeof toastr !== 'undefined') {
                 const options = {
@@ -426,15 +467,17 @@ Output [none] if no changes detected.`;
                 }
             }
         } catch (error) {
-            console.error('Failed to show popup:', error);
+            debugError('Failed to show popup:', error, 'AutoLorebookDetectionSystem');
         }
     }
 
     delay(ms) {
+        debugLog(`Delaying for ${ms}ms`, 'AutoLorebookDetectionSystem');
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     getStatus() {
+        debugLog('Getting status', 'AutoLorebookDetectionSystem');
         return {
             enabled: this.isEnabled,
             hasPrompt: !!this.systemPrompt,
@@ -448,6 +491,7 @@ Output [none] if no changes detected.`;
     }
 
     async manualTrigger() {
+        debugLog('Manual trigger called', 'AutoLorebookDetectionSystem');
         if (this.isProcessing) {
             this.showPopup('Auto lorebook check already in progress.', 'warning');
             return;
@@ -457,17 +501,22 @@ Output [none] if no changes detected.`;
             this.showPopup('Manual lorebook check started...', 'info');
             await this.processLorebookCommands();
         } catch (error) {
+            debugError(`Manual trigger failed: ${error}`, null, 'AutoLorebookDetectionSystem');
             this.showPopup(`Manual trigger failed: ${error.message}`, 'error');
         }
     }
 
     setPrompt(prompt) {
+        debugLog('Setting system prompt', 'AutoLorebookDetectionSystem');
         this.systemPrompt = prompt || this.getDefaultPrompt();
+        debugLog(`System prompt updated (${this.systemPrompt.length} chars)`, 'AutoLorebookDetectionSystem');
         return '[RPG Engine] System prompt updated.';
     }
 
     resetToDefaultPrompt() {
+        debugLog('Resetting to default prompt', 'AutoLorebookDetectionSystem');
         this.systemPrompt = this.getDefaultPrompt();
+        debugLog('Reset to default prompt', 'AutoLorebookDetectionSystem');
         return '[RPG Engine] Reset to default prompt.';
     }
 }

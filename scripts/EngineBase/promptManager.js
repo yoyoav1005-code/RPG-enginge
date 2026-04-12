@@ -3,6 +3,8 @@
  * @module PromptManager
  */
 
+import { debugLog, debugWarn } from './debug.js';
+
 class PromptManager {
     constructor() {
         this.prompts = {
@@ -11,6 +13,7 @@ class PromptManager {
             stateExtraction: null
         };
         this.loaded = false;
+        debugLog('PromptManager instance created', 'PromptManager');
     }
 
     /**
@@ -19,6 +22,7 @@ class PromptManager {
      */
     async loadPrompts() {
         try {
+            debugLog('Starting to load all prompts', 'PromptManager');
             await Promise.all([
                 this.loadPrompt('state-detection'),
                 this.loadPrompt('lorebook-update'),
@@ -39,6 +43,8 @@ class PromptManager {
      */
     async loadPrompt(promptName) {
         try {
+            debugLog(`Loading prompt: ${promptName}`, 'PromptManager');
+            
             // Map prompt names to filenames
             const filename = `${promptName}.md`;
             
@@ -61,7 +67,7 @@ class PromptManager {
             }
             const promptContent = await response.text();
             this.prompts[key] = promptContent.trim();
-            debugLog(`Loaded prompt: ${filename}`, 'PromptManager');
+            debugLog(`Loaded prompt: ${filename} (${promptContent.length} chars)`, 'PromptManager');
             return promptContent;
         } catch (error) {
             debugWarn(`Failed to load prompt ${promptName}:`, error, 'PromptManager');
@@ -74,6 +80,7 @@ class PromptManager {
      * @returns {string|null}
      */
     getStateDetectionPrompt() {
+        debugLog('Getting state detection prompt', 'PromptManager');
         if (!this.prompts.stateDetection) {
             debugWarn('State detection prompt not loaded', 'PromptManager');
         }
@@ -85,6 +92,7 @@ class PromptManager {
      * @returns {string|null}
      */
     getLorebookUpdatePrompt() {
+        debugLog('Getting lorebook update prompt', 'PromptManager');
         if (!this.prompts.lorebookUpdate) {
             debugWarn('Lorebook update prompt not loaded', 'PromptManager');
         }
@@ -96,6 +104,7 @@ class PromptManager {
      * @returns {string|null}
      */
     getStateExtractionPrompt() {
+        debugLog('Getting state extraction prompt', 'PromptManager');
         if (!this.prompts.stateExtraction) {
             debugWarn('State extraction prompt not loaded', 'PromptManager');
         }
@@ -107,6 +116,7 @@ class PromptManager {
      * @returns {boolean}
      */
     isLoaded() {
+        debugLog(`Prompt loaded status: ${this.loaded}`, 'PromptManager');
         return this.loaded;
     }
 
@@ -115,6 +125,7 @@ class PromptManager {
      * @returns {Object}
      */
     getAllPrompts() {
+        debugLog('Getting all prompts', 'PromptManager');
         return { ...this.prompts };
     }
 
@@ -123,6 +134,7 @@ class PromptManager {
      * @returns {Promise<void>}
      */
     async refreshPrompts() {
+        debugLog('Refreshing all prompts', 'PromptManager');
         this.prompts = {
             stateDetection: null,
             lorebookUpdate: null,
