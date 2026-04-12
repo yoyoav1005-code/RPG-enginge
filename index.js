@@ -98,6 +98,7 @@ async function initializeAutoLorebookSystem() {
         // Mark app as initialized after a short delay
         setTimeout(() => {
             autoLorebookSystem.markAppInitialized();
+            debugLog('App marked as initialized - auto lorebook analysis will now process new AI messages', 'AutoLorebook');
         }, 2000);
         
         debugLog('AutoLorebookDetectionSystem initialized successfully', 'AutoLorebook');
@@ -235,6 +236,22 @@ function registerSlashCommands() {
         }
     }, [], 'Manually trigger auto lorebook updates', true, true);
     
+    // /lorebookstatus - Check auto lorebook system status
+    registerSlashCommand('lorebookstatus', () => {
+        if (autoLorebookSystem) {
+            const status = autoLorebookSystem.getStatus();
+            const statusText = `Auto Lorebook Status:\n` +
+                `Enabled: ${status.enabled}\n` +
+                `Processing: ${status.isProcessing}\n` +
+                `Failures: ${status.consecutiveFailures}/${status.maxConsecutiveFailures}\n` +
+                `Retries: ${status.currentRetryCount}/${status.maxRetries}\n` +
+                `App Initialized: ${status.appInitialized}`;
+            toastr.info(statusText, 'RPG Engine');
+        } else {
+            toastr.error('AutoLorebookDetectionSystem not initialized', 'RPG Engine');
+        }
+    }, [], 'Check auto lorebook system status', true, true);
+    
     debugLog('Slash commands registered', 'RPG Engine');
 }
 
@@ -306,6 +323,7 @@ function createSettingsUI() {
                 <div class="flex-container">
                     <button id="rpg-reset-lorebook-prompt">Reset Prompt to Default</button>
                     <button id="rpg-view-lorebook-prompt">View Current Prompt</button>
+                    <button id="rpg-manual-trigger">Manual Trigger</button>
                 </div>
                 <div id="rpg-lorebook-status" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
             </div>
@@ -341,8 +359,10 @@ function createSettingsUI() {
         if (autoLorebookSystem) {
             if (extension_settings[MODULE_NAME].enableAutoLorebookUpdates) {
                 autoLorebookSystem.enable();
+                toastr.info('Auto lorebook updates enabled', 'RPG Engine');
             } else {
                 autoLorebookSystem.disable();
+                toastr.info('Auto lorebook updates disabled', 'RPG Engine');
             }
         }
         debugLog('Auto lorebook setting changed', 'RPG Engine');
@@ -401,6 +421,14 @@ function createSettingsUI() {
     $("#rpg-view-lorebook-prompt").on("click", function() {
         if (autoLorebookSystem) {
             toastr.info(autoLorebookSystem.systemPrompt, 'Current Auto Lorebook Prompt');
+        }
+    });
+    
+    $("#rpg-manual-trigger").on("click", function() {
+        if (autoLorebookSystem) {
+            autoLorebookSystem.manualTrigger();
+        } else {
+            toastr.error('AutoLorebookDetectionSystem not initialized', 'RPG Engine');
         }
     });
     
